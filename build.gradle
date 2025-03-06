@@ -1,0 +1,84 @@
+/*
+ * Copyright (c) Haulmont 2025. All Rights Reserved.
+ * Use is subject to license terms.
+ */
+
+buildscript {
+    repositories {
+        gradlePluginPortal()
+    }
+    dependencies {
+        classpath "io.jmix.gradle:jmix-gradle-plugin:2.4.1"
+    }
+}
+
+group = 'io.openbpm.ui'
+
+subprojects {
+    apply plugin: 'java-library'
+    apply plugin: 'maven-publish'
+    apply plugin: 'io.jmix'
+
+    repositories {
+        mavenCentral()
+        maven {
+            url 'https://nexus.jmix.io/repository/public'
+        }
+    }
+
+    jmix {
+        bomVersion = '2.4.1'
+        projectId = 'openbpm-ui-kit'
+    }
+
+    group = this.group
+    version = this.version
+
+    def props = new Properties()
+    buildFile.withInputStream { props.load(it) }
+    def subArchivesBaseName = props.getProperty('archivesBaseName')
+    def archName = subArchivesBaseName.substring(1, subArchivesBaseName.length() - 1)
+
+    java {
+        withSourcesJar()
+        withJavadocJar()
+    }
+
+    artifacts {
+        archives sourcesJar
+    }
+
+    publishing {
+        if (rootProject.hasProperty('openbpmUploadUrl')) {
+            repositories {
+                maven {
+                    url = rootProject['openbpmUploadUrl']
+                    credentials {
+                        username rootProject['openbpmUploadUser']
+                        password rootProject['openbpmUploadPassword']
+                    }
+                    allowInsecureProtocol = true
+                }
+            }
+        }
+
+        publications {
+            javaMaven(MavenPublication) {
+                artifactId = archName
+                from components.java
+            }
+        }
+    }
+
+    // remove after https://youtrack.jetbrains.com/issue/IDEA-227215 is fixed
+    tasks.withType(GenerateModuleMetadata) {
+        enabled = false
+    }
+
+    tasks.withType(Javadoc) {
+        options.addStringOption("sourcepath", "")
+        options.encoding = 'UTF-8'
+        options.memberLevel = JavadocMemberLevel.PROTECTED
+    }
+
+}

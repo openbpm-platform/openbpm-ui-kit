@@ -1,0 +1,18 @@
+/*
+ * Copyright (c) Haulmont 2025. All Rights Reserved.
+ * Use is subject to license terms.
+ */
+
+archivesBaseName = 'openbpm-ui-kit-starter'
+
+jmix {
+    entitiesEnhancing {
+        enabled = false
+    }
+}
+
+dependencies {
+    api project(':openbpm-ui-kit')
+
+    implementation 'org.springframework.boot:spring-boot-autoconfigure'
+}
