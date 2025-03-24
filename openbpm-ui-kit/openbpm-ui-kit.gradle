@@ -1,0 +1,24 @@
+/*
+ * Copyright (c) Haulmont 2025. All Rights Reserved.
+ * Use is subject to license terms.
+ */
+
+archivesBaseName = 'openbpm-ui-kit'
+
+dependencies {
+    implementation 'io.jmix.core:jmix-core'
+    implementation 'io.jmix.flowui:jmix-flowui'
+
+    testImplementation('org.springframework.boot:spring-boot-starter-test') {
+        exclude group: 'org.junit.vintage', module: 'junit-vintage-engine'
+    }
+}
+
+configurations.implementation {
+    exclude group: 'com.vaadin', module: 'hilla'
+    exclude group: 'com.vaadin', module: 'hilla-dev'
+}
+
+test {
+    useJUnitPlatform()
+}
