@@ -34,6 +34,7 @@ import java.util.List;
 @CssImport("bpmn-js/dist/assets/bpmn-font/css/bpmn-embedded.css")
 @CssImport("bpmn-js/dist/assets/bpmn-js.css")
 @CssImport("bpmn-js/dist/assets/diagram-js.css")
+@CssImport("./styles/bpmn-viewer.css")
 @JsModule("./src/bpmn-viewer/openbpm-bpmn-viewer.ts")
 public class BpmnViewer extends Component implements HasElement, ApplicationContextAware, InitializingBean {
     private final ObjectMapper objectMapper = new ObjectMapper();

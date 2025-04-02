@@ -1,0 +1,11 @@
+/*
+ * Copyright (c) Haulmont 2025. All Rights Reserved.
+ * Use is subject to license terms.
+ */
+
+:root {
+    --bpmn-running-activity-color: hsla(214, 100%, 49%, 0.16);
+    --bpmn-incident-overlay-bg-color: hsl(1, 92%, 91%);
+    --bpmn-incident-overlay-text-color: var(--lumo-error-color);
+    --bpmn-incident-overlay-border: 2px solid var(--lumo-error-color);
+}
