@@ -3,6 +3,9 @@
  * Use is subject to license terms.
  */
 
+import com.github.spotbugs.snom.Confidence
+import com.github.spotbugs.snom.Effort
+
 buildscript {
     repositories {
         gradlePluginPortal()
@@ -12,12 +15,20 @@ buildscript {
     }
 }
 
+plugins {
+    id 'com.github.spotbugs' version '6.1.7' apply false
+}
+
 group = 'io.openbpm.ui'
 
 subprojects {
     apply plugin: 'java-library'
     apply plugin: 'maven-publish'
     apply plugin: 'io.jmix'
+
+    if (project.hasProperty('spotbugsEnabled')) {
+        apply plugin: "com.github.spotbugs"
+    }
 
     repositories {
         mavenCentral()
@@ -66,6 +77,42 @@ subprojects {
             javaMaven(MavenPublication) {
                 artifactId = archName
                 from components.java
+            }
+        }
+    }
+
+    if (project.hasProperty('spotbugsEnabled')) {
+        spotbugs {
+            ignoreFailures = false
+            omitVisitors = ['FindDoubleCheck']
+            excludeFilter = project.file('../etc/spotbugs/spotbugs-exclude-filter.xml')
+            effort = Effort.valueOf('MAX')
+            reportLevel = Confidence.valueOf('MEDIUM')
+        }
+
+        spotbugsMain {
+            jvmArgs = ['-Xmx1024m']
+
+            reports {
+                xml.enabled = false
+                html {
+                    enabled = true
+                    stylesheet = 'fancy-hist.xsl'
+                    destination layout.buildDirectory.file("reports/spotbugs/${project.name}.html").get().asFile
+                }
+            }
+        }
+
+        spotbugsTest {
+            jvmArgs = ['-Xmx1024m']
+
+            reports {
+                xml.enabled = false
+                html {
+                    enabled = true
+                    stylesheet = 'fancy-hist.xsl'
+                    destination layout.buildDirectory.file("reports/spotbugs/test-${project.name}.html").get().asFile
+                }
             }
         }
     }
