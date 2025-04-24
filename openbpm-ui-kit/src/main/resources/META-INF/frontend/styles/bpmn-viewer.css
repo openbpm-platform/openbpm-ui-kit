@@ -8,4 +8,5 @@
     --bpmn-incident-overlay-bg-color: hsl(1, 92%, 91%);
     --bpmn-incident-overlay-text-color: var(--lumo-error-color);
     --bpmn-incident-overlay-border: 2px solid var(--lumo-error-color);
+    --bpmn-decision-instance-link-overlay-background: hsl(205, 100%, 50%);
 }

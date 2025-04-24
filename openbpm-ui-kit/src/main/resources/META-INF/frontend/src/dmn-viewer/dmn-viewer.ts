@@ -22,6 +22,9 @@ import {dmnJsSharedStyle} from './style/dmn-js-shared-style.js';
 // @ts-ignore
 import {dmnEmbeddedStyle} from './style/dmn-embedded-style.js';
 
+import {XmlImportCompleteEvent} from "./events";
+import {DmnDecisionDefinition} from "./types";
+
 // @ts-ignore
 @customElement('openbpm-control-dmn-viewer')
 // @ts-ignore
@@ -45,6 +48,20 @@ class OpenBpmControlDmnViewer extends LitElement {
         super();
 
         this.viewer = new Viewer();
+        this.viewer.on("import.parse.complete", (e: any) => {
+            const rootElements = e.definitions?.drgElement as Array<any> || [];
+            const decisionDefinitions: DmnDecisionDefinition[] = [];
+            rootElements.forEach((item: any) => {
+                if (item.$type === "dmn:Decision") {
+                    decisionDefinitions.push({
+                        key: item.id,
+                        name: item.name
+                    });
+                }
+            });
+            const decisionDefinitionsJson = JSON.stringify(decisionDefinitions);
+            this.dispatchEvent(new XmlImportCompleteEvent(decisionDefinitionsJson));
+        });
     }
 
     static get properties() {
@@ -54,6 +71,42 @@ class OpenBpmControlDmnViewer extends LitElement {
 
     public async reloadSchema(xmlSchema: string) {
         await this.viewer.importXML(xmlSchema);
+    }
+
+    public async showDecisionDefinition(decisionDefinitionKey: string) {
+        const views = this.viewer.getViews();
+        const decisionTableViews = views.filter( ({type, id}:{type: string, id:string}) =>
+                type === "decisionTable" && id === decisionDefinitionKey);
+        if (decisionTableViews && decisionTableViews.length > 0) {
+            this.viewer.open(decisionTableViews[0]);
+        } else {
+            console.log('There is no dmn view with such id: ', decisionDefinitionKey);
+        }
+    }
+
+    public async showDecisionInstance(decisionInstanceJson:any) {
+        const decisionInstance = JSON.parse(decisionInstanceJson);
+
+        if (decisionInstance && decisionInstance.outputDataList) {
+            decisionInstance.outputDataList.forEach((outputData: any) => {
+                const allDecisionCells = this.viewer._container.querySelectorAll(
+                    'td.cell[data-row-id="' + outputData.dataRowId + '"],' +
+                    ' [data-element-id="' + outputData.dataRowId + '"]');
+                allDecisionCells.forEach((cell: any) => {
+                    cell.style.background = '#e0f2fb';
+                });
+
+                const outputCells = this.viewer._container.querySelectorAll(
+                    '[data-row-id="' + outputData.dataRowId + '"]' +
+                    '[data-col-id="' + outputData.dataColId + '"]');
+                if (outputCells.length > 0) {
+                    const span = document.createElement('span');
+                    span.textContent = ' = ' + outputData.value;
+                    span.style.fontWeight = '700';
+                    outputCells[0].appendChild(span);
+                }
+            });
+        }
     }
 
     render() {

@@ -20,6 +20,8 @@ import io.openbpm.uikit.component.bpmnviewer.command.AddMarkerCmd;
 import io.openbpm.uikit.component.bpmnviewer.command.RemoveMarkerCmd;
 import io.openbpm.uikit.component.bpmnviewer.command.SetElementColorCmd;
 import io.openbpm.uikit.component.bpmnviewer.command.SetIncidentCountCmd;
+import io.openbpm.uikit.component.bpmnviewer.command.ShowDecisionInstanceLinkOverlayCmd;
+import io.openbpm.uikit.component.bpmnviewer.event.DecisionInstanceLinkOverlayClickedEvent;
 import io.openbpm.uikit.component.bpmnviewer.event.XmlImportCompleteEvent;
 import io.openbpm.uikit.component.bpmnviewer.model.IncidentOverlayData;
 import org.springframework.beans.BeansException;
@@ -118,6 +120,10 @@ public class BpmnViewer extends Component implements HasElement, ApplicationCont
         getElement().callJsFunction("resetZoom");
     }
 
+    public void showDecisionInstanceLinkOverlay(ShowDecisionInstanceLinkOverlayCmd cmd) {
+        callJsEncodedArgumentFunction("showDecisionInstanceLinkOverlay", cmd);
+    }
+
     /**
      * Registers a component listener for the {@link XmlImportCompleteEvent}.
      *
@@ -126,6 +132,17 @@ public class BpmnViewer extends Component implements HasElement, ApplicationCont
      */
     public Registration addImportCompleteListener(ComponentEventListener<XmlImportCompleteEvent> listener) {
         return addListener(XmlImportCompleteEvent.class, listener);
+    }
+
+    /**
+     * Registers a component listener for the {@link DecisionInstanceLinkOverlayClickedEvent}.
+     *
+     * @param listener a component listener for the {@link DecisionInstanceLinkOverlayClickedEvent}
+     * @return listener registration
+     */
+    public Registration addDecisionInstanceLinkOverlayClickListener(
+            ComponentEventListener<DecisionInstanceLinkOverlayClickedEvent> listener) {
+        return addListener(DecisionInstanceLinkOverlayClickedEvent.class, listener);
     }
 
     protected void callJsEncodedArgumentFunction(String cmdName, Object cmd) {

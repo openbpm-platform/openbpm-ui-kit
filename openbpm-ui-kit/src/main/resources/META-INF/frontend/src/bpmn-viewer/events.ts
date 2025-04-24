@@ -13,3 +13,12 @@ export class XmlImportCompleteEvent extends Event {
         this.processDefinitionsJson = processDefinitionsJson;
     }
 }
+
+export class DecisionInstanceLinkOverlayClickedEvent extends Event {
+    public decisionInstanceId: string;
+
+    public constructor(decisionInstanceId: string) {
+        super("decision-instance-link-overlay-clicked");
+        this.decisionInstanceId = decisionInstanceId;
+    }
+}

@@ -35,3 +35,9 @@ export interface IncidentOverlayData {
     incidentCount: number;
     tooltipMessage: string;
 }
+
+export interface DecisionInstanceLinkOverlayData {
+    activityId?: string;
+    decisionInstanceId?: string;
+    tooltipMessage?: string;
+}

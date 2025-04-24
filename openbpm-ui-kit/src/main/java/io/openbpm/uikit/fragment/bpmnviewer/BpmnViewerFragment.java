@@ -24,6 +24,8 @@ import io.openbpm.uikit.component.bpmnviewer.BpmnViewer;
 import io.openbpm.uikit.component.bpmnviewer.command.AddMarkerCmd;
 import io.openbpm.uikit.component.bpmnviewer.command.SetElementColorCmd;
 import io.openbpm.uikit.component.bpmnviewer.command.SetIncidentCountCmd;
+import io.openbpm.uikit.component.bpmnviewer.command.ShowDecisionInstanceLinkOverlayCmd;
+import io.openbpm.uikit.component.bpmnviewer.event.DecisionInstanceLinkOverlayClickedEvent;
 import io.openbpm.uikit.component.bpmnviewer.event.XmlImportCompleteEvent;
 
 @FragmentDescriptor("bpmn-viewer-fragment.xml")
@@ -86,9 +88,22 @@ public class BpmnViewerFragment extends Fragment<Div> {
         }
     }
 
+    public void showDecisionInstanceLinkOverlay(ShowDecisionInstanceLinkOverlayCmd cmd) {
+        if (bpmnViewer != null) {
+            this.bpmnViewer.showDecisionInstanceLinkOverlay(cmd);
+        }
+    }
+
     public void addImportCompleteListener(ComponentEventListener<XmlImportCompleteEvent> listener) {
         if (bpmnViewer != null) {
             bpmnViewer.addImportCompleteListener(listener);
+        }
+    }
+
+    public void addDecisionInstanceLinkOverlayClickListener(
+            ComponentEventListener<DecisionInstanceLinkOverlayClickedEvent> listener) {
+        if (bpmnViewer != null) {
+            bpmnViewer.addDecisionInstanceLinkOverlayClickListener(listener);
         }
     }
 
