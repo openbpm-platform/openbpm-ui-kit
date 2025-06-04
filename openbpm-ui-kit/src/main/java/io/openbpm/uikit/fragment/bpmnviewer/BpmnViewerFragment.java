@@ -41,6 +41,9 @@ public class BpmnViewerFragment extends Fragment<Div> {
     protected final static String BORDER_STYLES = String.join(" ", LumoUtility.Border.ALL, LumoUtility.BorderRadius.LARGE,
             LumoUtility.BorderColor.CONTRAST_30);
 
+    @Autowired
+    private DialogWindows dialogWindows;
+
     @ViewComponent
     protected Div viewerVBox;
     @ViewComponent
@@ -50,12 +53,10 @@ public class BpmnViewerFragment extends Fragment<Div> {
     @ViewComponent
     private JmixButton showDocumentationBtn;
 
-    protected BpmnViewer bpmnViewer;
     protected boolean noBorders;
     protected boolean showDocumentation;
+    protected BpmnViewer bpmnViewer;
     protected Registration defaultDocumentationOverlayClickListenerRegistration;
-    @Autowired
-    private DialogWindows dialogWindows;
 
     @Subscribe(target = Target.HOST_CONTROLLER)
     public void onHostBeforeShow(final View.BeforeShowEvent event) {
