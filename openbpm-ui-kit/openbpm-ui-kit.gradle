@@ -6,8 +6,8 @@
 archivesBaseName = 'openbpm-ui-kit'
 
 dependencies {
-    implementation 'io.jmix.core:jmix-core'
-    implementation 'io.jmix.flowui:jmix-flowui'
+    implementation 'io.jmix.core:jmix-core-starter'
+    implementation 'io.jmix.flowui:jmix-flowui-starter'
     implementation 'io.jmix.mdeditor:jmix-mdeditor-flowui-starter:0.0.1-SNAPSHOT'
 
     testImplementation('org.springframework.boot:spring-boot-starter-test') {
