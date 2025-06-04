@@ -9,6 +9,9 @@ import {css, html, LitElement} from 'lit';
 import {customElement} from 'lit/decorators.js';
 import Canvas from 'diagram-js/lib/core/Canvas';
 import Overlays from "diagram-js/lib/features/overlays/Overlays";
+import {
+  getBBox
+} from 'diagram-js/lib/util/Elements';
 import ZoomScroll from 'diagram-js/lib/navigation/zoomscroll/ZoomScroll';
 import {
     AddMarkerCmd,
@@ -24,6 +27,7 @@ import BpmDrawing from "./bpm/js/features/bpm-drawing/BpmDrawing";
 import BpmnViewer from "./bpm/js/BpmnViewer";
 import {ImportParseCompleteEvent} from "bpmn-js/lib/BaseViewer";
 import {DecisionInstanceLinkOverlayClickedEvent} from "./events";
+import {DocumentationOverlayClickedEvent} from "./events";
 
 @customElement("openbpm-bpmn-viewer")
 class OpenBpmBpmnViewer extends LitElement {
@@ -39,6 +43,8 @@ class OpenBpmBpmnViewer extends LitElement {
     private elementRegistry:any;
 
     private processDefinitionsJson: string;
+
+    private documentationOverlays: string[] = [];
 
     static styles = css`
         .running-activity:not(.djs-connection) .djs-visual > :nth-child(1) {
@@ -60,6 +66,17 @@ class OpenBpmBpmnViewer extends LitElement {
         }
 
         .decision-instance-link-overlay {
+            background-color: var(--bpmn-decision-instance-link-overlay-background);
+            cursor: pointer;
+            display: flex;
+            border-radius: 20%;
+            justify-content: center;
+            align-items: center;
+            width: 1.4em;
+            height: 1.4em;
+        }
+
+        .documentation-overlay {
             background-color: var(--bpmn-decision-instance-link-overlay-background);
             cursor: pointer;
             display: flex;
@@ -134,12 +151,99 @@ class OpenBpmBpmnViewer extends LitElement {
         }));
     }
 
+    public showDocumentationOverlay(cmdJson: string) {
+        const cmd = JSON.parse(cmdJson);
+        if (!cmd.showDocumentationOverlay) {
+            this.documentationOverlays.forEach(overlayId => {
+                this.overlays.remove(overlayId);
+            });
+            this.documentationOverlays = [];
+            return;
+        }
+        if (this.documentationOverlays.length > 0) {
+            return;
+        }
+
+        let elements = this.elementRegistry.getAll();
+        for (let i = 0; i < elements.length; i++) {
+            let element = elements[i];
+            if (element.type === 'label') {
+                continue;
+            }
+            let businessObject = element.businessObject;
+            let documentations = businessObject.get('documentation');
+
+            let documentationValue = null;
+            documentations.forEach((documentation) => {
+                if (documentation.textFormat === "text/plain" && documentation.text
+                    && documentation.text.length > 0) {
+
+                    documentationValue = documentation.text;
+                }
+            });
+            if (!documentationValue) {
+                continue;
+            }
+
+            const htmlDiv = document.createElement('div');
+            htmlDiv.innerHTML = `
+            <div class="documentation-overlay" title="${documentationValue}">
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="#ff0000" xmlns="http://www.w3.org/2000/svg">
+
+                    <g clip-path="url(#clip0_2388_139)">
+                    <path d="M8 0C3.6 0 0 3.6 0 8C0 12.4 3.6 16 8 16C12.4 16 16 12.4 16 8C16 3.6 12.4 0 8 0ZM8.9 13H6.9V11H8.9V13ZM11 8.1C10.6 8.5 10.2 8.7 9.8 8.8C9.2 9.2 9 9 9 10H7C7 8 8.2 7.4 9 7C9.3 6.9 9.5 6.8 9.7 6.6C9.8 6.5 10 6.3 9.8 5.9C9.6 5.4 9 4.9 8.1 4.9C6.7 4.9 6.5 6.1 6.4 6.4L4.4 6.1C4.5 5 5.4 2.9 8 2.9C9.6 2.9 11 3.8 11.6 5.1C12 6.2 11.8 7.3 11 8.1Z" fill="#ffffff"/>
+                    </g>
+                    <defs>
+                    <clipPath id="clip0_2388_139">
+                    <rect width="16" height="16" fill="white"/>
+                    </clipPath>
+                    </defs>
+
+
+                </svg>
+            </div>
+            `;
+
+            (function(element:OpenBpmControlBpmViewer, storedDocumentation:string, storedElement:any) {
+                htmlDiv.addEventListener('click', (event:MouseEvent) => {
+                    element.dispatchEvent(new DocumentationOverlayClickedEvent(
+                        storedElement.id, storedElement.type, storedDocumentation));
+                });
+            })(this, documentationValue, element);
+
+            let position = {right: 10, top: -10};
+
+            if (element.type === 'bpmn:SequenceFlow') {
+                let from = element.waypoints.length / 2 - 1;
+                let to = from + 1;
+                let minX = Math.min(element.waypoints[from].x, element.waypoints[to].x);
+                let maxX = Math.max(element.waypoints[from].x, element.waypoints[to].x);
+                let minY = Math.min(element.waypoints[from].y, element.waypoints[to].y);
+                let maxY = Math.max(element.waypoints[from].y, element.waypoints[to].y);
+
+                let waypointsBox = getBBox(element);
+
+                position = {
+                    left: (minX - waypointsBox.x + (maxX - minX) * 0.5 - 8),
+                    top: (minY - waypointsBox.y + (maxY - minY) * 0.5 - 8)
+                };
+            }
+
+            this.awaitRun(() =>
+                this.documentationOverlays.push(this.overlays.add(element.id, {
+                    html: htmlDiv,
+                    position: position
+                }
+            )));
+        };
+    }
+
     public showDecisionInstanceLinkOverlay(cmdJson: any) {
         const cmd:DecisionInstanceLinkOverlayData = JSON.parse(cmdJson);
         let elements = this.elementRegistry.getAll();
         for (let i = 0; i < elements.length; i++) {
-            let value = elements[i];
-            if (value.type == "bpmn:BusinessRuleTask" && value.id == cmd.activityId) {
+            let element = elements[i];
+            if (element.type == "bpmn:BusinessRuleTask" && element.id == cmd.activityId) {
                 const htmlDiv = document.createElement('div');
                 htmlDiv.innerHTML = `
                 <div class="decision-instance-link-overlay" title="${cmd.tooltipMessage}">
@@ -154,7 +258,7 @@ class OpenBpmBpmnViewer extends LitElement {
                     });
                 })(this, cmd.decisionInstanceId);
                 this.awaitRun(() =>
-                    this.overlays.add(value.id, {
+                    this.overlays.add(element.id, {
                         html: htmlDiv,
                         position: {
                             left: -10,

@@ -10,3 +10,11 @@
     margin-top: 0.5em;
     font-size: large;
 }
+
+.bpmn-viewer-show-documentation-btn {
+    z-index: 1;
+    position: fixed;
+    margin-left: 0.5em;
+    margin-top: 0.5em;
+    font-size: large;
+}

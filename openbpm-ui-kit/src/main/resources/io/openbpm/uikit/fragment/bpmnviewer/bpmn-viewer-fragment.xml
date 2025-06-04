@@ -8,6 +8,10 @@
         <div id="viewerVBox" width="100%" height="100%">
             <button id="zoomResetBtn" icon="CROSSHAIRS" themeNames="tertiary-inline"
                    classNames="bpmn-viewer-zoom-reset-btn" title="msg:///bpmnViewer.actions.ZoomReset"/>
+            <button id="showDocumentationBtn" icon="vaadin:question-circle" themeNames="tertiary-inline"
+                    classNames="bpmn-viewer-show-documentation-btn"
+                    title="msg:///bpmnViewer.actions.showDocumentation"
+                    visible="false"/>
             <div id="viewerContainer" width="100%" height="100%">
 
             </div>

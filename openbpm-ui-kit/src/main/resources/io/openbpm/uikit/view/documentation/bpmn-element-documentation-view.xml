@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<view xmlns="http://jmix.io/schema/flowui/view"
+      xmlns:mde="http://jmix.io/schema/mde/ui"
+      title="msg://bpmnElementDocumentationView.title">
+    <layout>
+        <hbox>
+            <span text="msg://elementType"/>
+            <span id="elementTypeLabel" classNames="font-bold"/>
+            <span text="msg://elementId"/>
+            <span id="elementIdLabel" classNames="font-bold"/>
+        </hbox>
+        <mde:mdEditor id="documentationViewer" readOnly="true" width="100%" height="100%"/>
+    </layout>
+</view>

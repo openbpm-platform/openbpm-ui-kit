@@ -33,6 +33,9 @@ subprojects {
     repositories {
         mavenCentral()
         maven {
+            url = 'https://nexus.openbpm.io/repository/public'
+        }
+        maven {
             url 'https://global.repo.jmix.io/repository/public'
         }
     }

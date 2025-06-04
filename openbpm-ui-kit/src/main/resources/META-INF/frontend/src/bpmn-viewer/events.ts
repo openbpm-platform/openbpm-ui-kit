@@ -22,3 +22,17 @@ export class DecisionInstanceLinkOverlayClickedEvent extends Event {
         this.decisionInstanceId = decisionInstanceId;
     }
 }
+
+export class DocumentationOverlayClickedEvent extends Event {
+    public elementId: string;
+    public elementType: string;
+    public elementDocumentation: string;
+
+    public constructor(elementId:string, elementType:string, elementDocumentation: string) {
+        super("documentation-overlay-clicked");
+
+        this.elementId = elementId;
+        this.elementType = elementType;
+        this.elementDocumentation = elementDocumentation;
+    }
+}
