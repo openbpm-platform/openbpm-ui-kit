@@ -5,6 +5,12 @@
 
 :root {
     --bpmn-running-activity-color: hsla(214, 100%, 49%, 0.16);
+    --bpmn-modification-source-activity-stroke-color: #006ae6;
+    --bpmn-modification-source-activity-bg-color: #d9edff;
+    --bpmn-modification-target-activity-stroke-color: #00997a;
+    --bpmn-modification-target-activity-bg-color: #d9f7ee;
+    --bpmn-activity-hover-fill-color: var(--lumo-primary-color-10pct);
+    --bpmn-activity-hover-stroke-color: var(--lumo-primary-color);
     --bpmn-incident-overlay-bg-color: hsl(1, 92%, 91%);
     --bpmn-incident-overlay-text-color: var(--lumo-error-color);
     --bpmn-incident-overlay-border: 2px solid var(--lumo-error-color);

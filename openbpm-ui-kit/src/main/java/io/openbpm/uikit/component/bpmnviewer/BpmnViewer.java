@@ -6,6 +6,7 @@
 package io.openbpm.uikit.component.bpmnviewer;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.vaadin.flow.component.Component;
 import com.vaadin.flow.component.ComponentEventListener;
@@ -14,6 +15,10 @@ import com.vaadin.flow.component.Tag;
 import com.vaadin.flow.component.dependency.CssImport;
 import com.vaadin.flow.component.dependency.JsModule;
 import com.vaadin.flow.component.dependency.NpmPackage;
+import com.vaadin.flow.component.internal.DeadlockDetectingCompletableFuture;
+import com.vaadin.flow.component.page.PendingJavaScriptResult;
+import com.vaadin.flow.internal.JsonUtils;
+import com.vaadin.flow.server.VaadinSession;
 import com.vaadin.flow.shared.Registration;
 import io.jmix.core.Messages;
 import io.openbpm.uikit.component.bpmnviewer.command.AddMarkerCmd;
@@ -24,7 +29,9 @@ import io.openbpm.uikit.component.bpmnviewer.command.ShowDecisionInstanceLinkOve
 import io.openbpm.uikit.component.bpmnviewer.command.ShowDocumentationOverlayCmd;
 import io.openbpm.uikit.component.bpmnviewer.event.DecisionInstanceLinkOverlayClickedEvent;
 import io.openbpm.uikit.component.bpmnviewer.event.DocumentationOverlayClickedEvent;
+import io.openbpm.uikit.component.bpmnviewer.event.ElementClickEvent;
 import io.openbpm.uikit.component.bpmnviewer.event.XmlImportCompleteEvent;
+import io.openbpm.uikit.component.bpmnviewer.model.ActivityData;
 import io.openbpm.uikit.component.bpmnviewer.model.IncidentOverlayData;
 import org.springframework.beans.BeansException;
 import org.springframework.beans.factory.InitializingBean;
@@ -32,6 +39,7 @@ import org.springframework.context.ApplicationContext;
 import org.springframework.context.ApplicationContextAware;
 
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
 
 @Tag("openbpm-bpmn-viewer")
 @NpmPackage(value = "bpmn-js", version = "17.11.1")
@@ -48,6 +56,7 @@ public class BpmnViewer extends Component implements HasElement, ApplicationCont
     protected ApplicationContext applicationContext;
 
     protected Messages messages;
+    protected ViewerMode mode;
 
     @Override
     public void setApplicationContext(ApplicationContext applicationContext) throws BeansException {
@@ -130,6 +139,11 @@ public class BpmnViewer extends Component implements HasElement, ApplicationCont
         callJsEncodedArgumentFunction("showDocumentationOverlay", cmd);
     }
 
+    public void setMode(ViewerMode mode) {
+        this.mode = mode;
+        getElement().callJsFunction("setMode", mode != null ? mode.name() : null);
+    }
+
     /**
      * Registers a component listener for the {@link XmlImportCompleteEvent}.
      *
@@ -160,6 +174,29 @@ public class BpmnViewer extends Component implements HasElement, ApplicationCont
     public Registration addDocumentationOverlayClickListener(
             ComponentEventListener<DocumentationOverlayClickedEvent> listener) {
         return addListener(DocumentationOverlayClickedEvent.class, listener);
+    }
+
+    public Registration addElementClickListener(ComponentEventListener<ElementClickEvent> listener) {
+        return addListener(ElementClickEvent.class, listener);
+    }
+
+    public CompletableFuture<List<ActivityData>> getActivities() {
+        VaadinSession session = VaadinSession.getCurrent();
+
+        CompletableFuture<List<ActivityData>> completableFuture = new DeadlockDetectingCompletableFuture<>(
+                session);
+
+        getElement().callJsFunction("getActivities")
+                .then(jsonValue -> {
+                    List<ActivityData> activityDataList = JsonUtils.readValue(jsonValue, new TypeReference<>() {
+                    });
+                    completableFuture.complete(activityDataList != null ? activityDataList : List.of());
+                }, errorValue -> {
+                    PendingJavaScriptResult.JavaScriptException exception = new PendingJavaScriptResult.JavaScriptException(errorValue);
+                    completableFuture.completeExceptionally(exception);
+                });
+
+        return completableFuture;
     }
 
     protected void callJsEncodedArgumentFunction(String cmdName, Object cmd) {

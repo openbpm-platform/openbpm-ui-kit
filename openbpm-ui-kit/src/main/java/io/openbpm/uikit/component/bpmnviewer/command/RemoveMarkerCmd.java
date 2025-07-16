@@ -16,6 +16,10 @@ public class RemoveMarkerCmd {
     public RemoveMarkerCmd() {
     }
 
+    public RemoveMarkerCmd(String elementId, ElementMarkerType marker) {
+        this(elementId, marker.getId());
+    }
+
     public RemoveMarkerCmd(String elementId, String marker) {
         this.elementId = elementId;
         this.marker = marker;

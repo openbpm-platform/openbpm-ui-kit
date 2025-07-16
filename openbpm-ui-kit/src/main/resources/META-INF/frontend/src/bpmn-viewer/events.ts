@@ -36,3 +36,16 @@ export class DocumentationOverlayClickedEvent extends Event {
         this.elementDocumentation = elementDocumentation;
     }
 }
+
+export class BpmnElementClickEvent extends Event {
+    public elementId: string;
+    public elementType: string;
+    public elementName: string | undefined;
+
+    public constructor(elementId: string, elementType: string, elementName?: string) {
+        super("bpmn-element-clicked");
+        this.elementId = elementId;
+        this.elementType = elementType;
+        this.elementName = elementName;
+    }
+}

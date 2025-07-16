@@ -41,3 +41,21 @@ export interface DecisionInstanceLinkOverlayData {
     decisionInstanceId?: string;
     tooltipMessage?: string;
 }
+
+export interface OverlayPosition {
+    top?: number,
+    right?: number,
+    bottom?: number,
+    left?: number
+}
+
+export enum ViewerMode {
+    ReadOnly = 'READ_ONLY',
+    Interactive = 'INTERACTIVE'
+}
+
+export interface ActivityData {
+    id: string;
+    name?: string;
+    type: string;
+}

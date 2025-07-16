@@ -23,16 +23,24 @@ import io.jmix.flowui.view.Target;
 import io.jmix.flowui.view.View;
 import io.jmix.flowui.view.ViewComponent;
 import io.openbpm.uikit.component.bpmnviewer.BpmnViewer;
+import io.openbpm.uikit.component.bpmnviewer.ViewerMode;
 import io.openbpm.uikit.component.bpmnviewer.command.AddMarkerCmd;
+import io.openbpm.uikit.component.bpmnviewer.command.RemoveMarkerCmd;
 import io.openbpm.uikit.component.bpmnviewer.command.SetElementColorCmd;
 import io.openbpm.uikit.component.bpmnviewer.command.SetIncidentCountCmd;
 import io.openbpm.uikit.component.bpmnviewer.command.ShowDecisionInstanceLinkOverlayCmd;
 import io.openbpm.uikit.component.bpmnviewer.command.ShowDocumentationOverlayCmd;
 import io.openbpm.uikit.component.bpmnviewer.event.DecisionInstanceLinkOverlayClickedEvent;
 import io.openbpm.uikit.component.bpmnviewer.event.DocumentationOverlayClickedEvent;
+import io.openbpm.uikit.component.bpmnviewer.event.ElementClickEvent;
 import io.openbpm.uikit.component.bpmnviewer.event.XmlImportCompleteEvent;
+import io.openbpm.uikit.component.bpmnviewer.model.ActivityData;
 import io.openbpm.uikit.view.documentation.BpmnElementDocumentationView;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.lang.Nullable;
+
+import java.util.List;
+import java.util.concurrent.CompletableFuture;
 
 @FragmentDescriptor("bpmn-viewer-fragment.xml")
 @CssImport("./styles/bpmn-viewer-fragment.css")
@@ -55,6 +63,7 @@ public class BpmnViewerFragment extends Fragment<Div> {
 
     protected boolean noBorders;
     protected boolean showDocumentation;
+    protected ViewerMode mode;
     protected BpmnViewer bpmnViewer;
     protected Registration defaultDocumentationOverlayClickListenerRegistration;
 
@@ -81,9 +90,21 @@ public class BpmnViewerFragment extends Fragment<Div> {
         this.noBorders = noBorders;
     }
 
+    public void setMode(ViewerMode mode) {
+        this.mode = mode;
+        if (bpmnViewer != null) {
+            bpmnViewer.setMode(mode);
+        }
+    }
+
+    public ViewerMode getMode() {
+        return mode;
+    }
+
     public void initViewer(String bpmnXml) {
         this.bpmnViewer = uiComponents.create(BpmnViewer.class);
         this.bpmnViewer.setBpmnXml(bpmnXml);
+        this.bpmnViewer.setMode(mode);
 
         viewerContainer.removeAll();
         viewerContainer.add(bpmnViewer);
@@ -99,6 +120,12 @@ public class BpmnViewerFragment extends Fragment<Div> {
     public void addMarker(AddMarkerCmd cmd) {
         if (this.bpmnViewer != null) {
             this.bpmnViewer.addMarker(cmd);
+        }
+    }
+
+    public void removeMarker(RemoveMarkerCmd cmd) {
+        if (this.bpmnViewer != null) {
+            this.bpmnViewer.removeMarker(cmd);
         }
     }
 
@@ -147,6 +174,21 @@ public class BpmnViewerFragment extends Fragment<Div> {
                 defaultDocumentationOverlayClickListenerRegistration = null;
             }
             bpmnViewer.addDocumentationOverlayClickListener(listener);
+        }
+    }
+
+    public void addElementClickListener(ComponentEventListener<ElementClickEvent> listener) {
+        if (bpmnViewer != null) {
+            bpmnViewer.addElementClickListener(listener);
+        }
+    }
+
+    @Nullable
+    public CompletableFuture<List<ActivityData>> getActivities() {
+        if (bpmnViewer != null) {
+            return bpmnViewer.getActivities();
+        } else {
+            return null;
         }
     }
 

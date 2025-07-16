@@ -9,29 +9,36 @@ import {css, html, LitElement} from 'lit';
 import {customElement} from 'lit/decorators.js';
 import Canvas from 'diagram-js/lib/core/Canvas';
 import Overlays from "diagram-js/lib/features/overlays/Overlays";
-import {
-  getBBox
-} from 'diagram-js/lib/util/Elements';
+import {getBBox} from 'diagram-js/lib/util/Elements';
 import ZoomScroll from 'diagram-js/lib/navigation/zoomscroll/ZoomScroll';
 import {
+    ActivityData,
     AddMarkerCmd,
     BpmProcessDefinition,
-    IncidentOverlayData,
+    DecisionInstanceLinkOverlayData,
+    IncidentOverlayData, OverlayPosition,
     ProcessElement,
     RemoveMarkerCmd,
-    SetElementColorCmd,
-    DecisionInstanceLinkOverlayData
+    SetElementColorCmd, ViewerMode
 } from "./types";
-import {XmlImportCompleteEvent} from "./events";
+import {
+    DecisionInstanceLinkOverlayClickedEvent,
+    DocumentationOverlayClickedEvent, BpmnElementClickEvent,
+    XmlImportCompleteEvent
+} from "./events";
 import BpmDrawing from "./bpm/js/features/bpm-drawing/BpmDrawing";
 import BpmnViewer from "./bpm/js/BpmnViewer";
 import {ImportParseCompleteEvent} from "bpmn-js/lib/BaseViewer";
-import {DecisionInstanceLinkOverlayClickedEvent} from "./events";
-import {DocumentationOverlayClickedEvent} from "./events";
+import ElementRegistry from 'diagram-js/lib/core/ElementRegistry';
+import EventBus from 'diagram-js/lib/core/EventBus';
+import {Element} from 'bpmn-js/lib/model/Types';
 
 @customElement("openbpm-bpmn-viewer")
 class OpenBpmBpmnViewer extends LitElement {
     private readonly BPMN_VIEWER_HOLDER: string = "bpmnViewerHolder";
+
+    private readonly IGNORED_ACTIVITY_TYPES: string[] = ["bpmn:Participant", "bpmn:SequenceFlow", "bpmn:Collaboration", "bpmn:Process"];
+
     private shadowRoot: any;
 
     private readonly viewer: BpmnViewer;
@@ -40,7 +47,8 @@ class OpenBpmBpmnViewer extends LitElement {
     private readonly canvas: Canvas;
     private zoomScroll: ZoomScroll;
     private overlays: Overlays;
-    private elementRegistry:any;
+    private elementRegistry: ElementRegistry;
+    private eventBus: EventBus;
 
     private processDefinitionsJson: string;
 
@@ -49,6 +57,21 @@ class OpenBpmBpmnViewer extends LitElement {
     static styles = css`
         .running-activity:not(.djs-connection) .djs-visual > :nth-child(1) {
             fill: var(--bpmn-running-activity-color) !important;
+        }
+
+        .modification-source-activity:not(.djs-connection) .djs-visual > :nth-child(1) {
+            stroke: var(--bpmn-modification-source-activity-stroke-color) !important;
+            fill: var(--bpmn-modification-source-activity-bg-color) !important;
+        }
+
+        .modification-target-activity:not(.djs-connection) .djs-visual > :nth-child(1) {
+            stroke: var(--bpmn-modification-target-activity-stroke-color) !important;
+            fill: var(--bpmn-modification-target-activity-bg-color) !important;
+        }
+
+        .activity-hover:not(.djs-connection) .djs-visual > :nth-child(1) {
+            stroke: var(--bpmn-activity-hover-stroke-color) !important;
+            fill: var(--bpmn-activity-hover-fill-color) !important;
         }
 
         .incident-overlay {
@@ -95,7 +118,8 @@ class OpenBpmBpmnViewer extends LitElement {
         this.canvas = this.viewer.get<Canvas>("canvas");
         this.zoomScroll = this.viewer.get<ZoomScroll>("zoomScroll");
         this.overlays = this.viewer.get<Overlays>("overlays");
-        this.elementRegistry = this.viewer.get("elementRegistry");
+        this.elementRegistry = this.viewer.get<ElementRegistry>("elementRegistry");
+        this.eventBus = this.viewer.get<EventBus>("eventBus");
 
         this.viewer.on("import.parse.complete", (e: ImportParseCompleteEvent) => {
             const rootElements = e.definitions?.rootElements as Array<ProcessElement> || [];
@@ -147,7 +171,7 @@ class OpenBpmBpmnViewer extends LitElement {
                     right: 10,
                     bottom: 15
                 }
-            })
+            });
         }));
     }
 
@@ -204,14 +228,14 @@ class OpenBpmBpmnViewer extends LitElement {
             </div>
             `;
 
-            (function(element:OpenBpmControlBpmViewer, storedDocumentation:string, storedElement:any) {
-                htmlDiv.addEventListener('click', (event:MouseEvent) => {
+            (function (element: OpenBpmControlBpmViewer, storedDocumentation: string, storedElement: any) {
+                htmlDiv.addEventListener('click', (event: MouseEvent) => {
                     element.dispatchEvent(new DocumentationOverlayClickedEvent(
                         storedElement.id, storedElement.type, storedDocumentation));
                 });
             })(this, documentationValue, element);
 
-            let position = {right: 10, top: -10};
+            let position: OverlayPosition = {right: 10, top: -10};
 
             if (element.type === 'bpmn:SequenceFlow') {
                 let from = element.waypoints.length / 2 - 1;
@@ -231,15 +255,16 @@ class OpenBpmBpmnViewer extends LitElement {
 
             this.awaitRun(() =>
                 this.documentationOverlays.push(this.overlays.add(element.id, {
-                    html: htmlDiv,
-                    position: position
-                }
-            )));
-        };
+                        html: htmlDiv,
+                        position: position
+                    }
+                )));
+        }
+
     }
 
     public showDecisionInstanceLinkOverlay(cmdJson: any) {
-        const cmd:DecisionInstanceLinkOverlayData = JSON.parse(cmdJson);
+        const cmd: DecisionInstanceLinkOverlayData = JSON.parse(cmdJson);
         let elements = this.elementRegistry.getAll();
         for (let i = 0; i < elements.length; i++) {
             let element = elements[i];
@@ -252,23 +277,23 @@ class OpenBpmBpmnViewer extends LitElement {
                     </svg>
                 </div>
                 `;
-                (function(element:OpenBpmControlBpmViewer, decisionInstanceId:string) {
-                    htmlDiv.addEventListener('click', (event:MouseEvent) => {
+                (function (element: OpenBpmControlBpmViewer, decisionInstanceId: string) {
+                    htmlDiv.addEventListener('click', (event: MouseEvent) => {
                         element.dispatchEvent(new DecisionInstanceLinkOverlayClickedEvent(decisionInstanceId));
                     });
                 })(this, cmd.decisionInstanceId);
                 this.awaitRun(() =>
                     this.overlays.add(element.id, {
-                        html: htmlDiv,
-                        position: {
-                            left: -10,
-                            bottom: 15
+                            html: htmlDiv,
+                            position: {
+                                left: -10,
+                                bottom: 15
+                            }
                         }
-                    }
-                ));
+                    ));
                 break;
             }
-        };
+        }
     }
 
     public addMarker(cmdJson: string) {
@@ -284,6 +309,53 @@ class OpenBpmBpmnViewer extends LitElement {
     public resetZoom() {
         this.awaitRun(() => this.zoomScroll.reset());
     }
+
+    public setMode(mode?: string) {
+        if (mode === ViewerMode.Interactive) {
+            const ignoredTypes: string[] = ["bpmn:Participant", "bpmn:SequenceFlow", "bpmn:Collaboration", "bpmn:Process"];
+
+            this.eventBus.on('element.hover', (event: any) => {
+                const type: string | undefined = event.element.type;
+                if (type && ignoredTypes.indexOf(type) === -1) {
+                    this.canvas.addMarker(event.element.id, 'activity-hover');
+                }
+            });
+
+            this.eventBus.on('element.out', (event: any) => {
+                this.canvas.removeMarker(event.element.id, 'activity-hover');
+            });
+
+            this.eventBus.on('element.click', (event: any) => {
+                const type: string | undefined = event.element.type;
+                if (type && ignoredTypes.indexOf(type) === -1) {
+                    this.dispatchEvent(new BpmnElementClickEvent(event.element.id, type, event.element.businessObject?.name));
+                }
+            });
+        } else if (!mode || mode === ViewerMode.ReadOnly) {
+            this.eventBus.off('element.hover');
+            this.eventBus.off('element.out');
+            this.eventBus.off('element.click');
+        }
+    }
+
+    public getActivities(): ActivityData[] {
+        const elementRegistry: ElementRegistry = this.viewer.get<ElementRegistry>('elementRegistry');
+
+        const allElements = elementRegistry.filter((e: Element) => {
+            return e.type && this.IGNORED_ACTIVITY_TYPES.indexOf(e.type) === -1;
+        });
+
+        const activityList: ActivityData[] = allElements.map((e: Element) => {
+            return {
+                id: e.id,
+                name: e.businessObject.name,
+                type: e.type
+            } as ActivityData;
+        });
+
+        return activityList;
+    }
+
 
     private initViewer() {
         this.viewer.attachTo(this.shadowRoot.getElementById(this.BPMN_VIEWER_HOLDER)!);
