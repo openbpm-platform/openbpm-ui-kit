@@ -11,10 +11,14 @@
     font-size: large;
 }
 
-.bpmn-viewer-show-documentation-btn {
+.bpmn-viewer-left-side-actions {
     z-index: 1;
     position: fixed;
     margin-left: 0.5em;
     margin-top: 0.5em;
     font-size: large;
+}
+
+.bpmn-viewer-show-stats-btn::part(prefix) {
+    margin: 0;
 }

@@ -14,7 +14,8 @@ public enum ElementMarkerType implements EnumClass<String> {
 
     RUNNING_ACTIVITY("running-activity"),
     MODIFICATION_SOURCE_ACTIVITY("modification-source-activity"),
-    MODIFICATION_TARGET_ACTIVITY("modification-target-activity");
+    MODIFICATION_TARGET_ACTIVITY("modification-target-activity"),
+    PRIMARY_COLOR_ACTIVITY("primary-color-activity"),;
 
     private final String id;
 

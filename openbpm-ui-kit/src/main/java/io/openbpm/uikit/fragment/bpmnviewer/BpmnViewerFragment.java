@@ -7,12 +7,14 @@ package io.openbpm.uikit.fragment.bpmnviewer;
 
 import com.vaadin.flow.component.ClickEvent;
 import com.vaadin.flow.component.ComponentEventListener;
+import com.vaadin.flow.component.button.ButtonVariant;
 import com.vaadin.flow.component.dependency.CssImport;
 import com.vaadin.flow.component.dialog.Dialog;
 import com.vaadin.flow.component.html.Div;
 import com.vaadin.flow.dom.Style;
 import com.vaadin.flow.shared.Registration;
 import com.vaadin.flow.theme.lumo.LumoUtility;
+import io.jmix.core.Messages;
 import io.jmix.flowui.DialogWindows;
 import io.jmix.flowui.component.UiComponentUtils;
 import io.jmix.flowui.fragment.Fragment;
@@ -26,6 +28,7 @@ import io.openbpm.uikit.component.bpmnviewer.BpmnViewer;
 import io.openbpm.uikit.component.bpmnviewer.ViewerMode;
 import io.openbpm.uikit.component.bpmnviewer.command.AddMarkerCmd;
 import io.openbpm.uikit.component.bpmnviewer.command.RemoveMarkerCmd;
+import io.openbpm.uikit.component.bpmnviewer.command.SetActivityStatisticsCmd;
 import io.openbpm.uikit.component.bpmnviewer.command.SetElementColorCmd;
 import io.openbpm.uikit.component.bpmnviewer.command.SetIncidentCountCmd;
 import io.openbpm.uikit.component.bpmnviewer.command.ShowDecisionInstanceLinkOverlayCmd;
@@ -50,7 +53,9 @@ public class BpmnViewerFragment extends Fragment<Div> {
             LumoUtility.BorderColor.CONTRAST_30);
 
     @Autowired
-    private DialogWindows dialogWindows;
+    protected DialogWindows dialogWindows;
+    @Autowired
+    protected Messages messages;
 
     @ViewComponent
     protected Div viewerVBox;
@@ -59,7 +64,9 @@ public class BpmnViewerFragment extends Fragment<Div> {
     @ViewComponent
     protected JmixButton zoomResetBtn;
     @ViewComponent
-    private JmixButton showDocumentationBtn;
+    protected JmixButton showDocumentationBtn;
+    @ViewComponent
+    protected JmixButton showStatisticsBtn;
 
     protected boolean noBorders;
     protected boolean showDocumentation;
@@ -84,6 +91,15 @@ public class BpmnViewerFragment extends Fragment<Div> {
 
         showDocumentation = false;
         showDocumentationOverlay(false);
+    }
+
+    public void showStatisticsButton(boolean visible) {
+        showStatisticsBtn.setVisible(visible);
+
+        if (visible) {
+            showStatisticsBtn.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
+            showStatisticsBtn.setTitle(messages.getMessage("bpmnViewer.actions.hideActivityStatistics"));
+        }
     }
 
     public void setNoBorders(boolean noBorders) {
@@ -138,6 +154,18 @@ public class BpmnViewerFragment extends Fragment<Div> {
     public void setIncidentCount(SetIncidentCountCmd cmd) {
         if (this.bpmnViewer != null) {
             this.bpmnViewer.setIncidentCount(cmd);
+        }
+    }
+
+    public void setActivityStatistics(SetActivityStatisticsCmd cmd) {
+        if (this.bpmnViewer != null) {
+            this.bpmnViewer.setActivityStatistics(cmd);
+        }
+    }
+
+    public void setActiveElements(List<String> activeElements) {
+        if (this.bpmnViewer != null) {
+            this.bpmnViewer.setActiveElements(activeElements);
         }
     }
 
@@ -203,6 +231,24 @@ public class BpmnViewerFragment extends Fragment<Div> {
     public void onShowDocumentationBtnClick(final ClickEvent<JmixButton> event) {
         showDocumentation = !showDocumentation;
         showDocumentationOverlay(showDocumentation);
+        if (showDocumentation) {
+            showDocumentationBtn.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
+        } else {
+            showDocumentationBtn.removeThemeVariants(ButtonVariant.LUMO_PRIMARY);
+        }
+    }
+
+    @Subscribe(id = "showStatisticsBtn", subject = "clickListener")
+    protected void onShowStatisticsBtnClick(final ClickEvent<JmixButton> event) {
+        if (showStatisticsBtn.getThemeNames().contains(ButtonVariant.LUMO_PRIMARY.getVariantName())) {
+            showStatisticsBtn.removeThemeVariants(ButtonVariant.LUMO_PRIMARY);
+            showStatisticsBtn.setTitle(messages.getMessage("bpmnViewer.actions.showActivityStatistics"));
+            bpmnViewer.setActivityStatisticsVisible(false);
+        } else {
+            showStatisticsBtn.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
+            showStatisticsBtn.setTitle(messages.getMessage("bpmnViewer.actions.hideActivityStatistics"));
+            bpmnViewer.setActivityStatisticsVisible(true);
+        }
     }
 
     protected void showDocumentationOverlay(boolean showDocumentationOverlay) {
@@ -217,9 +263,9 @@ public class BpmnViewerFragment extends Fragment<Div> {
     protected void documentationOverlayClicked(DocumentationOverlayClickedEvent event) {
         dialogWindows.view(UiComponentUtils.getCurrentView(), BpmnElementDocumentationView.class)
                 .withViewConfigurer(documentationView -> {
-            documentationView.setElementId(event.getElementId());
-            documentationView.setElementType(event.getElementType());
-            documentationView.setElementDocumentation(event.getElementDocumentation());
-        }).open();
+                    documentationView.setElementId(event.getElementId());
+                    documentationView.setElementType(event.getElementType());
+                    documentationView.setElementDocumentation(event.getElementDocumentation());
+                }).open();
     }
 }

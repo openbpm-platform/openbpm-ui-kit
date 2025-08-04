@@ -8,10 +8,21 @@
         <div id="viewerVBox" width="100%" height="100%">
             <button id="zoomResetBtn" icon="CROSSHAIRS" themeNames="tertiary-inline"
                    classNames="bpmn-viewer-zoom-reset-btn" title="msg:///bpmnViewer.actions.ZoomReset"/>
-            <button id="showDocumentationBtn" icon="vaadin:question-circle" themeNames="tertiary-inline"
-                    classNames="bpmn-viewer-show-documentation-btn"
-                    title="msg:///bpmnViewer.actions.showDocumentation"
-                    visible="false"/>
+            <vbox padding="false" themeNames="spacing-xs" classNames="bpmn-viewer-left-side-actions" width="1.85em">
+                <button id="showStatisticsBtn" themeNames="tertiary-inline"
+                        title="msg:///bpmnViewer.actions.showActivityStatistics"
+                        classNames="bpmn-viewer-show-stats-btn"
+                        visible="false" minWidth="0" width="100%">
+                    <prefix>
+                        <icon icon="vaadin:coins" size="1.85em"/>
+                    </prefix>
+                </button>
+
+                <button id="showDocumentationBtn" icon="vaadin:question-circle-o" themeNames="tertiary-inline"
+                        title="msg:///bpmnViewer.actions.showDocumentation"
+                        visible="false" minWidth="0" width="100%"/>
+            </vbox>
+
             <div id="viewerContainer" width="100%" height="100%">
 
             </div>

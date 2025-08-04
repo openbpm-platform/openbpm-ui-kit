@@ -23,6 +23,7 @@ import com.vaadin.flow.shared.Registration;
 import io.jmix.core.Messages;
 import io.openbpm.uikit.component.bpmnviewer.command.AddMarkerCmd;
 import io.openbpm.uikit.component.bpmnviewer.command.RemoveMarkerCmd;
+import io.openbpm.uikit.component.bpmnviewer.command.SetActivityStatisticsCmd;
 import io.openbpm.uikit.component.bpmnviewer.command.SetElementColorCmd;
 import io.openbpm.uikit.component.bpmnviewer.command.SetIncidentCountCmd;
 import io.openbpm.uikit.component.bpmnviewer.command.ShowDecisionInstanceLinkOverlayCmd;
@@ -32,13 +33,18 @@ import io.openbpm.uikit.component.bpmnviewer.event.DocumentationOverlayClickedEv
 import io.openbpm.uikit.component.bpmnviewer.event.ElementClickEvent;
 import io.openbpm.uikit.component.bpmnviewer.event.XmlImportCompleteEvent;
 import io.openbpm.uikit.component.bpmnviewer.model.ActivityData;
+import io.openbpm.uikit.component.bpmnviewer.model.ActivityStatisticsOverlayData;
 import io.openbpm.uikit.component.bpmnviewer.model.IncidentOverlayData;
 import org.springframework.beans.BeansException;
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.ApplicationContextAware;
+import org.springframework.lang.Nullable;
 
+import java.text.DecimalFormat;
+import java.text.DecimalFormatSymbols;
 import java.util.List;
+import java.util.Locale;
 import java.util.concurrent.CompletableFuture;
 
 @Tag("openbpm-bpmn-viewer")
@@ -49,6 +55,9 @@ import java.util.concurrent.CompletableFuture;
 @CssImport("./styles/bpmn-viewer.css")
 @JsModule("./src/bpmn-viewer/openbpm-bpmn-viewer.ts")
 public class BpmnViewer extends Component implements HasElement, ApplicationContextAware, InitializingBean {
+    private static final DecimalFormat thousandFormat = new DecimalFormat("#.#k", new DecimalFormatSymbols(Locale.US));
+    private static final DecimalFormat millionFormat = new DecimalFormat("#.#M", new DecimalFormatSymbols(Locale.US));
+
     private final ObjectMapper objectMapper = new ObjectMapper();
 
     protected String bpmnXml;
@@ -122,6 +131,15 @@ public class BpmnViewer extends Component implements HasElement, ApplicationCont
      */
     public void setElementColor(SetElementColorCmd cmd) {
         callJsEncodedArgumentFunction("setElementColor", cmd);
+    }
+
+    /**
+     * Sets a list of clickable elements on the diagram in the {@link ViewerMode#INTERACTIVE} mode.
+     *
+     * @param activeElements a list of element identifiers that can be clicked on the diagram.
+     */
+    public void setActiveElements(List<String> activeElements) {
+        callJsEncodedArgumentFunction("setActiveElements", activeElements);
     }
 
     /**
@@ -199,6 +217,25 @@ public class BpmnViewer extends Component implements HasElement, ApplicationCont
         return completableFuture;
     }
 
+    /**
+     * Adds an overlay with the specified count of running instances and incidents for the specified diagram element.
+     *
+     * @param cmd the command containing data to show the overlay with statistics for the diagram element
+     */
+    public void setActivityStatistics(SetActivityStatisticsCmd cmd) {
+        ActivityStatisticsOverlayData overlayData = new ActivityStatisticsOverlayData(cmd.getElementId(),
+                formatNumber(cmd.getInstanceCount()),
+                formatNumber(cmd.getIncidentCount()));
+        overlayData.setIncidentCountTooltipMessage(messages.formatMessage("", "bpmnViewer.overlays.incidentCount.tooltipMessage", cmd.getIncidentCount()));
+        overlayData.setInstanceCountTooltipMessage(messages.formatMessage("", "bpmnViewer.overlays.runningInstanceCount.tooltipMessage", cmd.getInstanceCount()));
+
+        callJsEncodedArgumentFunction("setActivityStatistics", overlayData);
+    }
+
+    public void setActivityStatisticsVisible(boolean visible) {
+        getElement().callJsFunction("setActivityStatisticsVisible", visible);
+    }
+
     protected void callJsEncodedArgumentFunction(String cmdName, Object cmd) {
         String encodedCmd;
         try {
@@ -207,5 +244,30 @@ public class BpmnViewer extends Component implements HasElement, ApplicationCont
             throw new IllegalArgumentException(e);
         }
         getElement().callJsFunction(cmdName, encodedCmd);
+    }
+
+    /**
+     * Formats a number to show in the overlay using the following rules:
+     * <ol>
+     *     <li>If the number is less than 1000, returns "as-is". </li>
+     *     <li>If the number is greater than 1000, e.g. 1234, returns "1.2k" as a formatted string.</li>
+     *     <li>If the number is greater than 1 million, e.g. 1 235 000, returns "1.2M" as a formatted string.</li>
+     * </ol>
+     *
+     * @param number a number for the formatting
+     * @return a string with formatted number
+     */
+    @Nullable
+    protected String formatNumber(@Nullable Integer number) {
+        if (number == null) {
+            return null;
+        }
+        if (number >= 1_000_000) {
+            return millionFormat.format(number / 1_000_000.0);
+        } else if (number >= 1_000) {
+            return thousandFormat.format(number / 1_000.0);
+        } else {
+            return String.valueOf(number);
+        }
     }
 }

@@ -13,17 +13,22 @@ import {getBBox} from 'diagram-js/lib/util/Elements';
 import ZoomScroll from 'diagram-js/lib/navigation/zoomscroll/ZoomScroll';
 import {
     ActivityData,
+    ActivityStatisticsOverlayData,
     AddMarkerCmd,
     BpmProcessDefinition,
     DecisionInstanceLinkOverlayData,
-    IncidentOverlayData, OverlayPosition,
+    IncidentOverlayData,
+    OverlayData,
+    OverlayPosition,
     ProcessElement,
     RemoveMarkerCmd,
-    SetElementColorCmd, ViewerMode
+    SetElementColorCmd,
+    ViewerMode
 } from "./types";
 import {
+    BpmnElementClickEvent,
     DecisionInstanceLinkOverlayClickedEvent,
-    DocumentationOverlayClickedEvent, BpmnElementClickEvent,
+    DocumentationOverlayClickedEvent,
     XmlImportCompleteEvent
 } from "./events";
 import BpmDrawing from "./bpm/js/features/bpm-drawing/BpmDrawing";
@@ -36,6 +41,7 @@ import {Element} from 'bpmn-js/lib/model/Types';
 @customElement("openbpm-bpmn-viewer")
 class OpenBpmBpmnViewer extends LitElement {
     private readonly BPMN_VIEWER_HOLDER: string = "bpmnViewerHolder";
+    private readonly STATISTICS_OVERLAY_TYPE = 'statistics-overlay';
 
     private readonly IGNORED_ACTIVITY_TYPES: string[] = ["bpmn:Participant", "bpmn:SequenceFlow", "bpmn:Collaboration", "bpmn:Process"];
 
@@ -53,6 +59,8 @@ class OpenBpmBpmnViewer extends LitElement {
     private processDefinitionsJson: string;
 
     private documentationOverlays: string[] = [];
+
+    private mode: string;
 
     static styles = css`
         .running-activity:not(.djs-connection) .djs-visual > :nth-child(1) {
@@ -72,42 +80,78 @@ class OpenBpmBpmnViewer extends LitElement {
         .activity-hover:not(.djs-connection) .djs-visual > :nth-child(1) {
             stroke: var(--bpmn-activity-hover-stroke-color) !important;
             fill: var(--bpmn-activity-hover-fill-color) !important;
+            cursor: pointer;
+        }
+
+        .primary-color-activity:not(.djs-connection) .djs-visual > :nth-child(1) {
+            stroke: var(--lumo-primary-color) !important;
+            fill: var(--lumo-primary-color-10pct) !important;
+        }
+
+        .activity-statistics-overlay {
+            display: flex;
+            flex-direction: row;
+            gap: var(--lumo-space-xs);
+        }
+
+        .running-instances-overlay {
+            background-color: var(--bpmn-running-instances-overlay-bg-color);
+            color: var(--bpmn-running-instances-overlay-text-color);
+            border-radius: var(--lumo-border-radius-m);
+            line-height: var(--default-bpmn-element-overlay-size);
+            padding: 0.1em;
+            text-align: center;
+            vertical-align: middle;
+            font-size: var(--default-bpmn-element-overlay-font-size);
+            font-weight: bold;
+            border: var(--bpmn-running-instances-overlay-border);
+            min-width: var(--default-bpmn-element-overlay-size);
+            height: var(--default-bpmn-element-overlay-size);
+            display: flex;
+            justify-content: center;
+        }
+
+        .overlay-hidden {
+            display: none;
         }
 
         .incident-overlay {
             background-color: var(--bpmn-incident-overlay-bg-color);
             color: var(--bpmn-incident-overlay-text-color);
-            border-radius: 50%;
-            padding: 0.025em 0.35em;
-            line-height: var(--lumo-line-height-xs);
-            display: inline-block;
+            border-radius: var(--lumo-border-radius-m);
+            line-height: var(--default-bpmn-element-overlay-size);
+            padding: 0.1em;
             text-align: center;
             vertical-align: middle;
-            font-size: 12px;
+            font-size: var(--default-bpmn-element-overlay-font-size);
             font-weight: bold;
             border: var(--bpmn-incident-overlay-border);
+            min-width: var(--default-bpmn-element-overlay-size);
+            height: var(--default-bpmn-element-overlay-size);
+            display: flex;
+            justify-content: center;
         }
 
         .decision-instance-link-overlay {
             background-color: var(--bpmn-decision-instance-link-overlay-background);
             cursor: pointer;
             display: flex;
-            border-radius: 20%;
+            border-radius: var(--lumo-border-radius-m);
             justify-content: center;
             align-items: center;
-            width: 1.4em;
-            height: 1.4em;
+            width: calc(var(--default-bpmn-element-overlay-size) + 2px);
+            height: calc(var(--default-bpmn-element-overlay-size) + 2px);
         }
 
         .documentation-overlay {
             background-color: var(--bpmn-decision-instance-link-overlay-background);
             cursor: pointer;
             display: flex;
-            border-radius: 20%;
+            border-radius: var(--lumo-border-radius-m);
             justify-content: center;
             align-items: center;
-            width: 1.4em;
-            height: 1.4em;
+            width: calc(var(--default-bpmn-element-overlay-size) + 2px);
+            height: calc(var(--default-bpmn-element-overlay-size) + 2px);
         }
     `;
 
@@ -168,7 +212,7 @@ class OpenBpmBpmnViewer extends LitElement {
             this.overlays.add(value.elementId, {
                 html: `<div class="incident-overlay" title="${value.tooltipMessage}">${value.incidentCount}</div>`,
                 position: {
-                    right: 10,
+                    left: -10,
                     bottom: 15
                 }
             });
@@ -286,7 +330,7 @@ class OpenBpmBpmnViewer extends LitElement {
                     this.overlays.add(element.id, {
                             html: htmlDiv,
                             position: {
-                                left: -10,
+                                right: 10,
                                 bottom: 15
                             }
                         }
@@ -311,31 +355,53 @@ class OpenBpmBpmnViewer extends LitElement {
     }
 
     public setMode(mode?: string) {
+        this.mode = mode;
         if (mode === ViewerMode.Interactive) {
             const ignoredTypes: string[] = ["bpmn:Participant", "bpmn:SequenceFlow", "bpmn:Collaboration", "bpmn:Process"];
+            const isActiveElement = element => {
+                const type: string | undefined = element.type;
+                return type && ignoredTypes.indexOf(type) === -1;
+            }
+            this.addElementInteractionListeners(isActiveElement)
 
-            this.eventBus.on('element.hover', (event: any) => {
-                const type: string | undefined = event.element.type;
-                if (type && ignoredTypes.indexOf(type) === -1) {
-                    this.canvas.addMarker(event.element.id, 'activity-hover');
-                }
-            });
-
-            this.eventBus.on('element.out', (event: any) => {
-                this.canvas.removeMarker(event.element.id, 'activity-hover');
-            });
-
-            this.eventBus.on('element.click', (event: any) => {
-                const type: string | undefined = event.element.type;
-                if (type && ignoredTypes.indexOf(type) === -1) {
-                    this.dispatchEvent(new BpmnElementClickEvent(event.element.id, type, event.element.businessObject?.name));
-                }
-            });
         } else if (!mode || mode === ViewerMode.ReadOnly) {
-            this.eventBus.off('element.hover');
-            this.eventBus.off('element.out');
-            this.eventBus.off('element.click');
+            this.removeElementInteractionListeners();
         }
+    }
+
+    public setActiveElements(activeElements?: string[]) {
+        if (this.mode == ViewerMode.Interactive && activeElements?.length > 0) {
+            const isActiveElement = element => activeElements.indexOf(element.id) !== -1
+
+            this.removeElementInteractionListeners();
+            this.addElementInteractionListeners(isActiveElement);
+        }
+    }
+
+    public setActivityStatisticsVisible(visible: boolean) {
+        const statOverlay: OverlayData[] = this.overlays.get({type: this.STATISTICS_OVERLAY_TYPE});
+
+        statOverlay.forEach(value => {
+            value.htmlContainer.style.visibility = visible ? 'visible' : 'hidden';
+        });
+    }
+
+    public setActivityStatistics(cmdJson: string) {
+        const element: ActivityStatisticsOverlayData = JSON.parse(cmdJson);
+        const incidentClassName = element.incidentCount ? 'incident-overlay' : 'overlay-hidden';
+
+        this.awaitRun(() => {
+            this.overlays.add(element.elementId, this.STATISTICS_OVERLAY_TYPE, {
+                html: `<div class="activity-statistics-overlay">
+                   <span class="running-instances-overlay" title="${element.instanceCountTooltipMessage}">${element.instanceCount}</span>
+                   <span class="${incidentClassName}" title="${element.incidentCountTooltipMessage}">${element.incidentCount}</span>
+                </div>`,
+                position: {
+                    left: -10,
+                    bottom: 15
+                }
+            });
+        });
     }
 
     public getActivities(): ActivityData[] {
@@ -356,6 +422,34 @@ class OpenBpmBpmnViewer extends LitElement {
         return activityList;
     }
 
+    private addElementInteractionListeners(isElementActive: (element: any) => boolean) {
+        this.eventBus.on('element.hover', (event: any) => {
+            const elementActive = isElementActive(event.element);
+            if (elementActive) {
+                this.canvas.addMarker(event.element.id, 'activity-hover');
+            }
+        });
+
+        this.eventBus.on('element.out', (event: any) => {
+            const elementActive = isElementActive(event.element);
+            if (elementActive) {
+                this.canvas.removeMarker(event.element.id, 'activity-hover');
+            }
+        });
+
+        this.eventBus.on('element.click', (event: any) => {
+            const elementActive = isElementActive(event.element);
+            if (elementActive) {
+                this.dispatchEvent(new BpmnElementClickEvent(event.element.id, event.element.type, event.element.businessObject?.name));
+            }
+        });
+    }
+
+    private removeElementInteractionListeners() {
+        this.eventBus.off('element.hover');
+        this.eventBus.off('element.out');
+        this.eventBus.off('element.click');
+    }
 
     private initViewer() {
         this.viewer.attachTo(this.shadowRoot.getElementById(this.BPMN_VIEWER_HOLDER)!);

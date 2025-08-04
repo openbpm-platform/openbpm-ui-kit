@@ -42,6 +42,14 @@ export interface DecisionInstanceLinkOverlayData {
     tooltipMessage?: string;
 }
 
+export interface ActivityStatisticsOverlayData {
+    elementId: string;
+    incidentCount?: string;
+    instanceCount: string;
+    incidentCountTooltipMessage?: string;
+    instanceCountTooltipMessage: string;
+}
+
 export interface OverlayPosition {
     top?: number,
     right?: number,
@@ -58,4 +66,8 @@ export interface ActivityData {
     id: string;
     name?: string;
     type: string;
+}
+
+export interface OverlayData {
+    htmlContainer: HTMLDivElement
 }

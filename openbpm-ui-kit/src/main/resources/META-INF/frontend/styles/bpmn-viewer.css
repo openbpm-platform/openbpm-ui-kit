@@ -14,5 +14,12 @@
     --bpmn-incident-overlay-bg-color: hsl(1, 92%, 91%);
     --bpmn-incident-overlay-text-color: var(--lumo-error-color);
     --bpmn-incident-overlay-border: 2px solid var(--lumo-error-color);
-    --bpmn-decision-instance-link-overlay-background: hsl(205, 100%, 50%);
+    --bpmn-decision-instance-link-overlay-background: var(--lumo-primary-color);
+
+    --bpmn-running-instances-overlay-bg-color: hsl(270, 30%, 92%);
+    --bpmn-running-instances-overlay-text-color: hsl(270, 80%, 45%);
+    --bpmn-running-instances-overlay-border: 2px solid var(--bpmn-running-instances-overlay-text-color);
+
+    --default-bpmn-element-overlay-size: 1.2em;
+    --default-bpmn-element-overlay-font-size: var(--lumo-font-size-xxs);
 }
