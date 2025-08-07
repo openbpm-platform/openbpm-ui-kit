@@ -31,8 +31,12 @@ import io.openbpm.uikit.component.bpmnviewer.command.RemoveMarkerCmd;
 import io.openbpm.uikit.component.bpmnviewer.command.SetActivityStatisticsCmd;
 import io.openbpm.uikit.component.bpmnviewer.command.SetElementColorCmd;
 import io.openbpm.uikit.component.bpmnviewer.command.SetIncidentCountCmd;
+import io.openbpm.uikit.component.bpmnviewer.command.ShowCalledInstanceOverlayCmd;
+import io.openbpm.uikit.component.bpmnviewer.command.ShowCalledProcessOverlaysCmd;
 import io.openbpm.uikit.component.bpmnviewer.command.ShowDecisionInstanceLinkOverlayCmd;
 import io.openbpm.uikit.component.bpmnviewer.command.ShowDocumentationOverlayCmd;
+import io.openbpm.uikit.component.bpmnviewer.event.CalledProcessInstanceOverlayClickEvent;
+import io.openbpm.uikit.component.bpmnviewer.event.CalledProcessOverlayClickEvent;
 import io.openbpm.uikit.component.bpmnviewer.event.DecisionInstanceLinkOverlayClickedEvent;
 import io.openbpm.uikit.component.bpmnviewer.event.DocumentationOverlayClickedEvent;
 import io.openbpm.uikit.component.bpmnviewer.event.ElementClickEvent;
@@ -211,6 +215,24 @@ public class BpmnViewerFragment extends Fragment<Div> {
         }
     }
 
+    public void addCalledProcessOverlayClickListener(ComponentEventListener<CalledProcessOverlayClickEvent> listener) {
+        if (bpmnViewer != null) {
+            bpmnViewer.addCalledProcessOverlayClickListener(listener);
+        }
+    }
+
+    public void addCalledProcessInstanceOverlayClickListener(ComponentEventListener<CalledProcessInstanceOverlayClickEvent> listener) {
+        if (bpmnViewer != null) {
+            bpmnViewer.addCalledProcessInstanceOverlayClickListener(listener);
+        }
+    }
+
+    public void showCalledInstance(ShowCalledInstanceOverlayCmd cmd) {
+        if (bpmnViewer != null) {
+            bpmnViewer.showCalledInstanceOverlay(cmd);
+        }
+    }
+
     @Nullable
     public CompletableFuture<List<ActivityData>> getActivities() {
         if (bpmnViewer != null) {
@@ -257,6 +279,17 @@ public class BpmnViewerFragment extends Fragment<Div> {
 
             cmd.setShowDocumentationOverlay(showDocumentationOverlay);
             bpmnViewer.showDocumentationOverlay(cmd);
+        }
+    }
+
+    public void showCalledProcessOverlays() {
+        if (bpmnViewer != null) {
+            bpmnViewer.addImportCompleteListener(event -> {
+                ShowCalledProcessOverlaysCmd cmd = new ShowCalledProcessOverlaysCmd();
+                cmd.setVisible(true);
+
+                bpmnViewer.showCalledProcessOverlays(cmd);
+            });
         }
     }
 

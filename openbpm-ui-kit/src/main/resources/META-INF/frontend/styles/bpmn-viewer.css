@@ -14,7 +14,7 @@
     --bpmn-incident-overlay-bg-color: hsl(1, 92%, 91%);
     --bpmn-incident-overlay-text-color: var(--lumo-error-color);
     --bpmn-incident-overlay-border: 2px solid var(--lumo-error-color);
-    --bpmn-decision-instance-link-overlay-background: var(--lumo-primary-color);
+    --bpmn-navigation-overlay-background: var(--lumo-primary-color);
 
     --bpmn-running-instances-overlay-bg-color: hsl(270, 30%, 92%);
     --bpmn-running-instances-overlay-text-color: hsl(270, 80%, 45%);

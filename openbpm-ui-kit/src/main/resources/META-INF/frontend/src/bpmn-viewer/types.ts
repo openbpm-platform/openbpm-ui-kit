@@ -71,3 +71,12 @@ export interface ActivityData {
 export interface OverlayData {
     htmlContainer: HTMLDivElement
 }
+
+export enum OverlayType {
+    DOCUMENTATION = 'documentation',
+    DECISION_INSTANCE = 'decision-instance',
+    CALLED_PROCESS = 'called-process',
+    CALLED_PROCESS_INSTANCE = 'called-process-instance',
+    ACTIVITY_STATISTICS = 'activity-statistics',
+    INCIDENT_COUNT = 'incident-count'
+}

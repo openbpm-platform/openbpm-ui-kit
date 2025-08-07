@@ -26,14 +26,20 @@ import io.openbpm.uikit.component.bpmnviewer.command.RemoveMarkerCmd;
 import io.openbpm.uikit.component.bpmnviewer.command.SetActivityStatisticsCmd;
 import io.openbpm.uikit.component.bpmnviewer.command.SetElementColorCmd;
 import io.openbpm.uikit.component.bpmnviewer.command.SetIncidentCountCmd;
+import io.openbpm.uikit.component.bpmnviewer.command.ShowCalledInstanceOverlayCmd;
+import io.openbpm.uikit.component.bpmnviewer.command.ShowCalledProcessOverlaysCmd;
 import io.openbpm.uikit.component.bpmnviewer.command.ShowDecisionInstanceLinkOverlayCmd;
 import io.openbpm.uikit.component.bpmnviewer.command.ShowDocumentationOverlayCmd;
+import io.openbpm.uikit.component.bpmnviewer.event.CalledProcessInstanceOverlayClickEvent;
+import io.openbpm.uikit.component.bpmnviewer.event.CalledProcessOverlayClickEvent;
 import io.openbpm.uikit.component.bpmnviewer.event.DecisionInstanceLinkOverlayClickedEvent;
 import io.openbpm.uikit.component.bpmnviewer.event.DocumentationOverlayClickedEvent;
 import io.openbpm.uikit.component.bpmnviewer.event.ElementClickEvent;
 import io.openbpm.uikit.component.bpmnviewer.event.XmlImportCompleteEvent;
 import io.openbpm.uikit.component.bpmnviewer.model.ActivityData;
 import io.openbpm.uikit.component.bpmnviewer.model.ActivityStatisticsOverlayData;
+import io.openbpm.uikit.component.bpmnviewer.model.CalledInstancesOverlayData;
+import io.openbpm.uikit.component.bpmnviewer.model.CalledProcessOverlayData;
 import io.openbpm.uikit.component.bpmnviewer.model.IncidentOverlayData;
 import org.springframework.beans.BeansException;
 import org.springframework.beans.factory.InitializingBean;
@@ -157,6 +163,38 @@ public class BpmnViewer extends Component implements HasElement, ApplicationCont
         callJsEncodedArgumentFunction("showDocumentationOverlay", cmd);
     }
 
+    /**
+     * Shows or hides the overlays for all Call activity elements on the diagram to navigate to the called process.
+     *
+     * @param cmd command data
+     */
+    public void showCalledProcessOverlays(ShowCalledProcessOverlaysCmd cmd) {
+        CalledProcessOverlayData overlayData = new CalledProcessOverlayData();
+        overlayData.setVisible(cmd.isVisible());
+        overlayData.setTooltipMessage(messages.getMessage("bpmnViewer.overlays.showCalledProcess.tooltipMessage"));
+
+        callJsEncodedArgumentFunction("showCalledProcessOverlays", overlayData);
+    }
+
+    /**
+     * Shows the overlay for the specified diagram element to navigate to the called process instances.
+     *
+     * @param cmd command data
+     */
+    public void showCalledInstanceOverlay(ShowCalledInstanceOverlayCmd cmd) {
+        CalledInstancesOverlayData overlayData = new CalledInstancesOverlayData();
+        overlayData.setElementId(cmd.getElementId());
+        overlayData.setProcessInstanceIds(cmd.getProcessInstanceIds());
+        overlayData.setTooltipMessage(messages.getMessage("bpmnViewer.overlays.showCalledInstances.tooltipMessage"));
+
+        callJsEncodedArgumentFunction("showCalledInstanceOverlay", overlayData);
+    }
+
+    /**
+     * Sets a mode for the viewer.
+     *
+     * @param mode new mode
+     */
     public void setMode(ViewerMode mode) {
         this.mode = mode;
         getElement().callJsFunction("setMode", mode != null ? mode.name() : null);
@@ -194,10 +232,41 @@ public class BpmnViewer extends Component implements HasElement, ApplicationCont
         return addListener(DocumentationOverlayClickedEvent.class, listener);
     }
 
+    /**
+     * Registers a component listener for the {@link ElementClickEvent}.
+     *
+     * @param listener a component listener for the {@link ElementClickEvent}
+     * @return listener registration
+     */
     public Registration addElementClickListener(ComponentEventListener<ElementClickEvent> listener) {
         return addListener(ElementClickEvent.class, listener);
     }
 
+    /**
+     * Registers a component listener for the {@link CalledProcessOverlayClickEvent}.
+     *
+     * @param listener a component listener for the {@link CalledProcessOverlayClickEvent}
+     * @return listener registration
+     */
+    public Registration addCalledProcessOverlayClickListener(ComponentEventListener<CalledProcessOverlayClickEvent> listener) {
+        return addListener(CalledProcessOverlayClickEvent.class, listener);
+    }
+
+    /**
+     * Registers a component listener for the {@link CalledProcessInstanceOverlayClickEvent}.
+     *
+     * @param listener a component listener for the {@link CalledProcessInstanceOverlayClickEvent}
+     * @return listener registration
+     */
+    public Registration addCalledProcessInstanceOverlayClickListener(ComponentEventListener<CalledProcessInstanceOverlayClickEvent> listener) {
+        return addListener(CalledProcessInstanceOverlayClickEvent.class, listener);
+    }
+
+    /**
+     * Loads a list of activities from the diagram shown in the viewer.
+     *
+     * @return a completable feature to get a list of activities
+     */
     public CompletableFuture<List<ActivityData>> getActivities() {
         VaadinSession session = VaadinSession.getCurrent();
 
@@ -232,6 +301,11 @@ public class BpmnViewer extends Component implements HasElement, ApplicationCont
         callJsEncodedArgumentFunction("setActivityStatistics", overlayData);
     }
 
+    /**
+     * Makes all overlays with the activity statistics visible or not.
+     *
+     * @param visible whether to show or hide the activity statistics overlays
+     */
     public void setActivityStatisticsVisible(boolean visible) {
         getElement().callJsFunction("setActivityStatisticsVisible", visible);
     }

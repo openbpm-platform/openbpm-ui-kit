@@ -28,7 +28,7 @@ export class DocumentationOverlayClickedEvent extends Event {
     public elementType: string;
     public elementDocumentation: string;
 
-    public constructor(elementId:string, elementType:string, elementDocumentation: string) {
+    public constructor(elementId: string, elementType: string, elementDocumentation: string) {
         super("documentation-overlay-clicked");
 
         this.elementId = elementId;
@@ -47,5 +47,27 @@ export class BpmnElementClickEvent extends Event {
         this.elementId = elementId;
         this.elementType = elementType;
         this.elementName = elementName;
+    }
+}
+
+export class CalledProcessOverlayClickEvent extends Event {
+    public elementId: string;
+    public callActivity: JSON;
+
+    public constructor(elementId: string, callActivity: JSON) {
+        super("called-process-overlay-clicked");
+
+        this.elementId = elementId;
+        this.callActivity = callActivity;
+    }
+
+}
+
+export class CalledProcessInstanceOverlayClickEvent extends Event {
+    public details: JSON;
+
+    public constructor(details: JSON) {
+        super("called-process-instance-overlay-clicked");
+        this.details = details;
     }
 }

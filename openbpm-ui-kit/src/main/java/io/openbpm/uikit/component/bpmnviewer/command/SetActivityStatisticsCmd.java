@@ -5,6 +5,9 @@
 
 package io.openbpm.uikit.component.bpmnviewer.command;
 
+/**
+ * A command for {@link io.openbpm.uikit.component.bpmnviewer.BpmnViewer} to show the overlay with activity statistics.
+ */
 public class SetActivityStatisticsCmd {
     protected String elementId;
     protected Integer instanceCount;
