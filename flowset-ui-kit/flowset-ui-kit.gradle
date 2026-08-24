@@ -11,6 +11,7 @@ dependencies {
     implementation 'io.jmix.core:jmix-core-starter'
     implementation 'io.jmix.flowui:jmix-flowui-starter'
 
+    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
     testImplementation('org.springframework.boot:spring-boot-starter-test') {
         exclude group: 'org.junit.vintage', module: 'junit-vintage-engine'
     }
