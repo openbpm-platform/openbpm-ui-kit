@@ -10,11 +10,15 @@ package io.flowset.uikit.component.bpmnviewer.model;
  */
 public interface ElementIncidentData {
     /**
+     * Gets a process element (activity) identifier.
+     *
      * @return a process element (activity) identifier
      */
     String getElementId();
 
     /**
+     * Gets a count of the opened incidents for the process element
+     *
      * @return a count of the opened incidents for the process element
      */
     Integer getIncidentCount();

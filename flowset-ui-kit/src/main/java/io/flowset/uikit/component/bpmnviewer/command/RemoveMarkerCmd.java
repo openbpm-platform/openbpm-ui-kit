@@ -13,13 +13,29 @@ public class RemoveMarkerCmd {
     protected String elementId;
     protected String marker;
 
+    /**
+     * Creates the command with no attributes set.
+     */
     public RemoveMarkerCmd() {
     }
 
+    /**
+     * Creates the command with the provided element identifier and marker type.
+     *
+     * @param elementId process element identifier
+     * @param marker    a marker type to remove for the element
+     */
     public RemoveMarkerCmd(String elementId, ElementMarkerType marker) {
         this(elementId, marker.getId());
     }
 
+    /**
+     * Creates the command with the provided element identifier and marker name.
+     *
+     * @param elementId process element identifier
+     * @param marker    a marker name to remove for the element
+     * @see ElementMarkerType
+     */
     public RemoveMarkerCmd(String elementId, String marker) {
         this.elementId = elementId;
         this.marker = marker;

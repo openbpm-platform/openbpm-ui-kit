@@ -16,6 +16,12 @@
     box-shadow: var(--lumo-box-shadow-xs);
 }
 
+vaadin-button.bpmn-viewer-action-active {
+    --vaadin-button-tertiary-background: var(--lumo-primary-color);
+    --vaadin-button-background: var(--lumo-primary-color);
+    --vaadin-button-text-color: var(--lumo-primary-contrast-color);
+}
+
 .jmix-dialog-window-view-wrapper .bpmn-viewer-right-side-actions {
     position: absolute;
     right: 2em;

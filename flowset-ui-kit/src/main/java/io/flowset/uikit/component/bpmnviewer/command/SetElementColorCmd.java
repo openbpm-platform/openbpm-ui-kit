@@ -14,9 +14,19 @@ public class SetElementColorCmd {
     protected String stroke;
     protected String fill;
 
+    /**
+     * Creates the command with no attributes set.
+     */
     public SetElementColorCmd() {
     }
 
+    /**
+     * Creates the command with the provided element identifier and colors.
+     *
+     * @param elementId process element identifier
+     * @param stroke    a string containing color for the element borders
+     * @param fill      a string containing background color of the process element
+     */
     public SetElementColorCmd(String elementId, String stroke, String fill) {
         this.elementId = elementId;
         this.stroke = stroke;

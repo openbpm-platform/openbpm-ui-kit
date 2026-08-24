@@ -11,12 +11,12 @@ buildscript {
         gradlePluginPortal()
     }
     dependencies {
-        classpath "io.jmix.gradle:jmix-gradle-plugin:2.4.1"
+        classpath "io.jmix.gradle:jmix-gradle-plugin:3.0.1"
     }
 }
 
 plugins {
-    id 'com.github.spotbugs' version '6.1.7' apply false
+    id 'com.github.spotbugs' version '6.5.9' apply false
 }
 
 group = 'io.flowset.ui'
@@ -36,12 +36,12 @@ subprojects {
             url = 'https://nexus.flowset.io/repository/public'
         }
         maven {
-            url 'https://global.repo.jmix.io/repository/public'
+            url = 'https://global.repo.jmix.io/repository/public'
         }
     }
 
     jmix {
-        bomVersion = '2.4.1'
+        bomVersion = '3.0.1'
         projectId = 'flowset-ui-kit'
     }
 
@@ -50,8 +50,6 @@ subprojects {
 
     def props = new Properties()
     buildFile.withInputStream { props.load(it) }
-    def subArchivesBaseName = props.getProperty('archivesBaseName')
-    def archName = subArchivesBaseName.substring(1, subArchivesBaseName.length() - 1)
 
     java {
         withSourcesJar()
@@ -68,8 +66,8 @@ subprojects {
                 maven {
                     url = rootProject['flowsetUploadUrl']
                     credentials {
-                        username rootProject['flowsetUploadUser']
-                        password rootProject['flowsetUploadPassword']
+                        username = rootProject['flowsetUploadUser']
+                        password = rootProject['flowsetUploadPassword']
                     }
                     allowInsecureProtocol = true
                 }
@@ -78,7 +76,7 @@ subprojects {
 
         publications {
             javaMaven(MavenPublication) {
-                artifactId = archName
+                artifactId = project.base.archivesName.get()
                 from components.java
             }
         }
@@ -101,7 +99,7 @@ subprojects {
                 html {
                     enabled = true
                     stylesheet = 'fancy-hist.xsl'
-                    destination layout.buildDirectory.file("reports/spotbugs/${project.name}.html").get().asFile
+                    outputLocation = layout.buildDirectory.file("reports/spotbugs/${project.name}.html").get().asFile
                 }
             }
         }
@@ -114,7 +112,7 @@ subprojects {
                 html {
                     enabled = true
                     stylesheet = 'fancy-hist.xsl'
-                    destination layout.buildDirectory.file("reports/spotbugs/test-${project.name}.html").get().asFile
+                    outputLocation = layout.buildDirectory.file("reports/spotbugs/test-${project.name}.html").get().asFile
                 }
             }
         }
@@ -129,6 +127,10 @@ subprojects {
         options.addStringOption("sourcepath", "")
         options.encoding = 'UTF-8'
         options.memberLevel = JavadocMemberLevel.PROTECTED
+    }
+
+    project.tasks.withType(JavaCompile).configureEach {
+        options.compilerArgs.add("-parameters")
     }
 
 }

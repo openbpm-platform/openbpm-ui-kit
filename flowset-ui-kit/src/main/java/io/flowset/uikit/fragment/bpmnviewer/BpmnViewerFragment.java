@@ -12,6 +12,11 @@ import com.vaadin.flow.component.dependency.CssImport;
 import com.vaadin.flow.component.html.Div;
 import com.vaadin.flow.shared.Registration;
 import com.vaadin.flow.theme.lumo.LumoUtility;
+import io.flowset.uikit.component.bpmnviewer.BpmnViewer;
+import io.flowset.uikit.component.bpmnviewer.ViewerMode;
+import io.flowset.uikit.component.bpmnviewer.command.*;
+import io.flowset.uikit.component.bpmnviewer.event.*;
+import io.flowset.uikit.component.bpmnviewer.model.ActivityData;
 import io.jmix.core.Messages;
 import io.jmix.flowui.fragment.Fragment;
 import io.jmix.flowui.fragment.FragmentDescriptor;
@@ -20,13 +25,8 @@ import io.jmix.flowui.view.Subscribe;
 import io.jmix.flowui.view.Target;
 import io.jmix.flowui.view.View;
 import io.jmix.flowui.view.ViewComponent;
-import io.flowset.uikit.component.bpmnviewer.BpmnViewer;
-import io.flowset.uikit.component.bpmnviewer.ViewerMode;
-import io.flowset.uikit.component.bpmnviewer.command.*;
-import io.flowset.uikit.component.bpmnviewer.event.*;
-import io.flowset.uikit.component.bpmnviewer.model.ActivityData;
+import org.jspecify.annotations.Nullable;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.lang.Nullable;
 
 import java.util.Collection;
 import java.util.List;
@@ -38,6 +38,7 @@ import java.util.concurrent.CompletableFuture;
 @FragmentDescriptor("bpmn-viewer-fragment.xml")
 @CssImport("./styles/bpmn-viewer-fragment.css")
 public class BpmnViewerFragment extends Fragment<Div> {
+    protected static final String ACTION_ACTIVE_CLASS_NAME = "bpmn-viewer-action-active";
 
     protected final static String BORDER_STYLES = String.join(" ", LumoUtility.Border.ALL, LumoUtility.BorderRadius.LARGE,
             LumoUtility.BorderColor.CONTRAST_30);
@@ -92,7 +93,7 @@ public class BpmnViewerFragment extends Fragment<Div> {
         showStatisticsBtn.setVisible(visible);
 
         if (visible) {
-            showStatisticsBtn.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
+            updateButtonActiveState(showStatisticsBtn, true);
             showStatisticsBtn.setTitle(messages.getMessage("bpmnViewer.actions.hideActivityStatistics"));
         }
     }
@@ -394,26 +395,27 @@ public class BpmnViewerFragment extends Fragment<Div> {
     public void onShowDocumentationBtnClick(final ClickEvent<JmixButton> event) {
         showDocumentation = !showDocumentation;
         showDocumentationOverlay(showDocumentation);
-        if (showDocumentation) {
-            showDocumentationBtn.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
-        } else {
-            showDocumentationBtn.removeThemeVariants(ButtonVariant.LUMO_PRIMARY);
-        }
+        updateButtonActiveState(showDocumentationBtn, showDocumentation);
     }
 
     @Subscribe(id = "showStatisticsBtn", subject = "clickListener")
     protected void onShowStatisticsBtnClick(final ClickEvent<JmixButton> event) {
-        if (showStatisticsBtn.getThemeNames().contains(ButtonVariant.LUMO_PRIMARY.getVariantName())) {
-            showStatisticsBtn.removeThemeVariants(ButtonVariant.LUMO_PRIMARY);
+        if (isActiveButton(showStatisticsBtn)) {
+            updateButtonActiveState(showStatisticsBtn, false);
             showStatisticsBtn.setTitle(messages.getMessage("bpmnViewer.actions.showActivityStatistics"));
             bpmnViewer.setActivityStatisticsVisible(false);
         } else {
-            showStatisticsBtn.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
+            updateButtonActiveState(showStatisticsBtn, true);
             showStatisticsBtn.setTitle(messages.getMessage("bpmnViewer.actions.hideActivityStatistics"));
             bpmnViewer.setActivityStatisticsVisible(true);
         }
     }
 
+    /**
+     * Shows or hides the documentation overlays for the diagram elements that have documentation.
+     *
+     * @param showDocumentationOverlay whether the documentation overlays should be shown
+     */
     protected void showDocumentationOverlay(boolean showDocumentationOverlay) {
         if (bpmnViewer != null) {
             ShowDocumentationOverlayCmd cmd = new ShowDocumentationOverlayCmd();
@@ -423,6 +425,15 @@ public class BpmnViewerFragment extends Fragment<Div> {
         }
     }
 
+    /**
+     * Enables showing the overlays for navigating to the called process definitions for all
+     * Call activity elements of the diagram.
+     * <p>
+     * The overlays are shown when the BPMN XML import is complete, so the method can be invoked
+     * right after {@link #initViewer(String)}.
+     *
+     * @see #addCalledProcessOverlayClickListener(ComponentEventListener)
+     */
     public void showCalledProcessOverlays() {
         if (bpmnViewer != null) {
             bpmnViewer.addImportCompleteListener(event -> {
@@ -434,6 +445,15 @@ public class BpmnViewerFragment extends Fragment<Div> {
         }
     }
 
+    /**
+     * Enables showing the overlays for navigating to the referenced decision definitions for all
+     * Business Rule Task elements of the diagram.
+     * <p>
+     * The overlays are shown when the BPMN XML import is complete, so the method can be invoked
+     * right after {@link #initViewer(String)}.
+     *
+     * @see #addDecisionLinkOverlayClickListener(ComponentEventListener)
+     */
     public void showDecisionLinkOverlays() {
         if (bpmnViewer != null) {
             bpmnViewer.addImportCompleteListener(event -> {
@@ -446,12 +466,42 @@ public class BpmnViewerFragment extends Fragment<Div> {
     }
 
     /**
+     * Marks the action button as active or inactive by adding or removing the corresponding class name.
+     *
+     * @param button button to update
+     * @param active whether the button should be marked as active
+     */
+    protected void updateButtonActiveState(JmixButton button, boolean active) {
+        if (active) {
+            button.addClassName(ACTION_ACTIVE_CLASS_NAME);
+        } else {
+            button.removeClassName(ACTION_ACTIVE_CLASS_NAME);
+        }
+    }
+
+    /**
+     * Checks whether the action button is marked as active.
+     *
+     * @param button button to check
+     * @return {@code true} if the button is marked as active, {@code false} otherwise
+     */
+    protected boolean isActiveButton(JmixButton button) {
+        return button.hasClassName(ACTION_ACTIVE_CLASS_NAME);
+    }
+
+    /**
      * Extension point for initializing the BPMN viewer fragment.
      */
     protected void onInit() {
 
     }
 
+    /**
+     * Creates a {@link BpmnViewer} component to be placed into the fragment.
+     * Can be overridden to provide a custom viewer implementation.
+     *
+     * @return a new BPMN viewer component
+     */
     protected BpmnViewer createBpmnViewer() {
         return uiComponents.create(BpmnViewer.class);
     }

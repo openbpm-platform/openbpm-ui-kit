@@ -5,8 +5,11 @@ import com.vaadin.flow.component.Tag;
 import com.vaadin.flow.component.dependency.JsModule;
 import com.vaadin.flow.component.dependency.NpmPackage;
 import com.vaadin.flow.function.SerializableConsumer;
-import elemental.json.JsonValue;
+import tools.jackson.databind.JsonNode;
 
+/**
+ * Integrated <code>@bpmn-io/form-js</code> viewer for viewing forms.
+ */
 @Tag("flowset-control-form-viewer")
 @NpmPackage(value = "@bpmn-io/form-js", version = "1.24.1")
 @NpmPackage(value = "@bpmn-io/form-js-viewer", version = "1.24.1")
@@ -28,7 +31,7 @@ public class FormViewer extends Component {
      * @param formJson form JSON string
      * @param callback callback
      */
-    public void setFormJson(String formJson, SerializableConsumer<JsonValue> callback) {
+    public void setFormJson(String formJson, SerializableConsumer<JsonNode> callback) {
         getElement().callJsFunction("reloadSchema", formJson).then(callback);
     }
 }

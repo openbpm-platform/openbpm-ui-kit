@@ -11,6 +11,9 @@ import io.jmix.flowui.fragment.FragmentDescriptor;
 import io.jmix.flowui.view.ViewComponent;
 import io.flowset.uikit.component.formviewer.FormViewer;
 
+/**
+ * A wrapper fragment for displaying {@link FormViewer}.
+ */
 @FragmentDescriptor("form-viewer-fragment.xml")
 public class FormViewerFragment extends Fragment<Div> {
 
@@ -19,6 +22,12 @@ public class FormViewerFragment extends Fragment<Div> {
 
     protected FormViewer formViewer;
 
+    /**
+     * Creates the form viewer component, imports the provided form JSON into it
+     * and places the viewer into the fragment.
+     *
+     * @param bpmnXml form JSON string to show in the viewer
+     */
     public void initViewer(String bpmnXml) {
         this.formViewer = uiComponents.create(FormViewer.class);
         this.formViewer.setFormJson(bpmnXml);

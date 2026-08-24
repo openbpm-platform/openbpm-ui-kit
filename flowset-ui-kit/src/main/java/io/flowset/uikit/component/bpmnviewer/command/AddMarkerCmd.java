@@ -13,14 +13,30 @@ public class AddMarkerCmd {
     protected String elementId;
     protected String marker;
 
+    /**
+     * Creates the command with no attributes set.
+     */
     public AddMarkerCmd() {
     }
 
+    /**
+     * Creates the command with the provided element identifier and marker name.
+     *
+     * @param elementId process element identifier
+     * @param marker    a marker name to set for the element
+     * @see ElementMarkerType
+     */
     public AddMarkerCmd(String elementId, String marker) {
         this.elementId = elementId;
         this.marker = marker;
     }
 
+    /**
+     * Creates the command with the provided element identifier and marker type.
+     *
+     * @param elementId process element identifier
+     * @param marker    a marker type to set for the element
+     */
     public AddMarkerCmd(String elementId, ElementMarkerType marker) {
         this(elementId, marker.getId());
     }

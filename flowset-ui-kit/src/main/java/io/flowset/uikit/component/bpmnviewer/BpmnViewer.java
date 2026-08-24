@@ -5,9 +5,9 @@
 
 package io.flowset.uikit.component.bpmnviewer;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import com.vaadin.flow.internal.JacksonUtils;
+import tools.jackson.core.JacksonException;
+import tools.jackson.core.type.TypeReference;
 import com.vaadin.flow.component.Component;
 import com.vaadin.flow.component.ComponentEventListener;
 import com.vaadin.flow.component.HasElement;
@@ -17,7 +17,6 @@ import com.vaadin.flow.component.dependency.JsModule;
 import com.vaadin.flow.component.dependency.NpmPackage;
 import com.vaadin.flow.component.internal.DeadlockDetectingCompletableFuture;
 import com.vaadin.flow.component.page.PendingJavaScriptResult;
-import com.vaadin.flow.internal.JsonUtils;
 import com.vaadin.flow.server.VaadinSession;
 import com.vaadin.flow.shared.Registration;
 import io.flowset.uikit.component.bpmnviewer.command.*;
@@ -29,7 +28,8 @@ import org.springframework.beans.BeansException;
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.ApplicationContextAware;
-import org.springframework.lang.Nullable;
+import org.jspecify.annotations.Nullable;
+import tools.jackson.databind.json.JsonMapper;
 
 import java.text.DecimalFormat;
 import java.text.DecimalFormatSymbols;
@@ -38,6 +38,12 @@ import java.util.List;
 import java.util.Locale;
 import java.util.concurrent.CompletableFuture;
 
+/**
+ * Integrated <code>bpmn-js</code> viewer for viewing BPMN 2.0 process diagrams.
+ * <p>
+ * Depending on the {@link ViewerMode} set by {@link #setMode(ViewerMode)}, the diagram is either
+ * read-only or interactive, i.e. its elements can be clicked.
+ */
 @Tag("flowset-bpmn-viewer")
 @NpmPackage(value = "bpmn-js", version = "18.24.0")
 @CssImport("bpmn-js/dist/assets/bpmn-font/css/bpmn-embedded.css")
@@ -49,7 +55,7 @@ public class BpmnViewer extends Component implements HasElement, ApplicationCont
     private static final DecimalFormat thousandFormat = new DecimalFormat("#.#k", new DecimalFormatSymbols(Locale.US));
     private static final DecimalFormat millionFormat = new DecimalFormat("#.#M", new DecimalFormatSymbols(Locale.US));
 
-    private final ObjectMapper objectMapper = new ObjectMapper();
+    private final JsonMapper objectMapper = new JsonMapper();
 
     protected String bpmnXml;
 
@@ -68,6 +74,9 @@ public class BpmnViewer extends Component implements HasElement, ApplicationCont
         initComponent();
     }
 
+    /**
+     * Initializes the component beans. Invoked by Spring after the component properties are set.
+     */
     protected void initComponent() {
         this.messages = applicationContext.getBean(Messages.class);
     }
@@ -158,10 +167,20 @@ public class BpmnViewer extends Component implements HasElement, ApplicationCont
         callJsEncodedArgumentFunction("setDisabledElements", CollectionUtils.emptyIfNull(disabledElements));
     }
 
+    /**
+     * Shows the overlay for the specified diagram element to navigate to the evaluated decision instance.
+     *
+     * @param cmd a command containing the diagram element and decision instance identifiers
+     */
     public void showDecisionInstanceLinkOverlay(ShowDecisionInstanceLinkOverlayCmd cmd) {
         callJsEncodedArgumentFunction("showDecisionInstanceLinkOverlay", cmd);
     }
 
+    /**
+     * Shows or hides the overlays with documentation for all diagram elements that have it.
+     *
+     * @param cmd a command containing the documentation overlays visibility
+     */
     public void showDocumentationOverlay(ShowDocumentationOverlayCmd cmd) {
         callJsEncodedArgumentFunction("showDocumentationOverlay", cmd);
     }
@@ -324,7 +343,7 @@ public class BpmnViewer extends Component implements HasElement, ApplicationCont
 
         getElement().callJsFunction("getActivities")
                 .then(jsonValue -> {
-                    List<ActivityData> activityDataList = JsonUtils.readValue(jsonValue, new TypeReference<>() {
+                    List<ActivityData> activityDataList = JacksonUtils.readValue(jsonValue, new TypeReference<>() {
                     });
                     completableFuture.complete(activityDataList != null ? activityDataList : List.of());
                 }, errorValue -> {
@@ -369,11 +388,18 @@ public class BpmnViewer extends Component implements HasElement, ApplicationCont
         getElement().callJsFunction("setActivityStatisticsVisible", visible);
     }
 
+    /**
+     * Invokes the client-side function passing the provided argument encoded as a JSON string.
+     *
+     * @param cmdName a name of the client-side function to invoke
+     * @param cmd     an argument to encode and pass to the function
+     * @throws IllegalArgumentException if the argument cannot be encoded to JSON
+     */
     protected void callJsEncodedArgumentFunction(String cmdName, Object cmd) {
         String encodedCmd;
         try {
             encodedCmd = objectMapper.writeValueAsString(cmd);
-        } catch (JsonProcessingException e) {
+        } catch (JacksonException e) {
             throw new IllegalArgumentException(e);
         }
         getElement().callJsFunction(cmdName, encodedCmd);

@@ -3,7 +3,9 @@
  * Use is subject to license terms.
  */
 
-archivesBaseName = 'flowset-ui-kit'
+base {
+    archivesName = 'flowset-ui-kit'
+}
 
 dependencies {
     implementation 'io.jmix.core:jmix-core-starter'

@@ -13,10 +13,20 @@ import io.flowset.uikit.component.bpmnviewer.BpmnViewer;
 public class ShowDecisionLinkOverlaysCmd {
     protected boolean visible;
 
+    /**
+     * Gets whether the overlays should be shown.
+     *
+     * @return {@code true} if the overlays should be shown, {@code false} otherwise
+     */
     public boolean isVisible() {
         return visible;
     }
 
+    /**
+     * Sets whether the overlays should be shown.
+     *
+     * @param visible {@code true} to show the overlays, {@code false} to hide them
+     */
     public void setVisible(boolean visible) {
         this.visible = visible;
     }

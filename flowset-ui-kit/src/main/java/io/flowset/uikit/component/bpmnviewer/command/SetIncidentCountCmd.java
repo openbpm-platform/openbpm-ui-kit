@@ -16,17 +16,35 @@ public class SetIncidentCountCmd {
 
     protected List<? extends ElementIncidentData> elements = new ArrayList<>();
 
+    /**
+     * Creates the command with an empty list of elements.
+     */
     public SetIncidentCountCmd() {
     }
 
+    /**
+     * Creates the command with the provided list of elements.
+     *
+     * @param elements a list of elements with their incident counts
+     */
     public SetIncidentCountCmd(List<? extends ElementIncidentData> elements) {
         this.elements = elements;
     }
 
+    /**
+     * Gets a list of elements the incident count is shown for.
+     *
+     * @return a list of elements with their incident counts
+     */
     public List<? extends ElementIncidentData> getElements() {
         return elements;
     }
 
+    /**
+     * Sets a list of elements to show the incident count for.
+     *
+     * @param elements a list of elements with their incident counts
+     */
     public void setElements(List<? extends ElementIncidentData> elements) {
         this.elements = elements;
     }

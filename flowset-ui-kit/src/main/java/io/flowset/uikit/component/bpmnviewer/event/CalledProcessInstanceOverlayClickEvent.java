@@ -5,13 +5,13 @@
 
 package io.flowset.uikit.component.bpmnviewer.event;
 
-import com.fasterxml.jackson.core.type.TypeReference;
 import com.vaadin.flow.component.ComponentEvent;
 import com.vaadin.flow.component.DomEvent;
 import com.vaadin.flow.component.EventData;
-import com.vaadin.flow.internal.JsonUtils;
-import elemental.json.JsonObject;
+import com.vaadin.flow.internal.JacksonUtils;
 import io.flowset.uikit.component.bpmnviewer.BpmnViewer;
+import tools.jackson.core.type.TypeReference;
+import tools.jackson.databind.node.ObjectNode;
 
 import java.util.List;
 
@@ -31,15 +31,21 @@ public class CalledProcessInstanceOverlayClickEvent extends ComponentEvent<BpmnV
      * @param source     the source component
      * @param fromClient <code>true</code> if the event originated from the client
      *                   side, <code>false</code> otherwise
+     * @param details    event details containing process instance identifiers
      */
     public CalledProcessInstanceOverlayClickEvent(BpmnViewer source, boolean fromClient,
-                                                  @EventData("event.details") JsonObject details
+                                                  @EventData("event.details") ObjectNode details
     ) {
         super(source, fromClient);
-        this.processInstanceIds = JsonUtils.readValue(details.getArray("processInstanceIds"), new TypeReference<>() {
+        this.processInstanceIds = JacksonUtils.readValue(details.get("processInstanceIds").asArray(), new TypeReference<>() {
         });
     }
 
+    /**
+     * Gets identifiers of the process instances called by the Call activity element whose overlay has been clicked.
+     *
+     * @return called process instance identifiers
+     */
     public List<String> getProcessInstanceIds() {
         return processInstanceIds;
     }

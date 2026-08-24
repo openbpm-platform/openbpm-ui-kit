@@ -3,7 +3,9 @@
  * Use is subject to license terms.
  */
 
-archivesBaseName = 'flowset-ui-kit-starter'
+base {
+    archivesName = 'flowset-ui-kit-starter'
+}
 
 jmix {
     entitiesEnhancing {
