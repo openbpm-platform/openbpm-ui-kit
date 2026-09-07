@@ -31,19 +31,19 @@ BpmRenderer.prototype.canRender = function (element) {
         && ['dmn', 'jmix-send-email', 'jmix-load-entities-jpql', 'jmix-modify-entity', 'jmix-create-entity'].includes(elementType);
 };
 
-BpmRenderer.prototype.drawShape = function (parentNode, element) {
+BpmRenderer.prototype.drawShape = function (parentNode, element, attrs = {}) {
     const elementType = element.businessObject.type || element.businessObject.get('flowable:type');
     if (['jmix-load-entities-jpql', 'jmix-modify-entity', 'jmix-create-entity'].includes(elementType)) {
-        return _drawEntityDataTask.bind(this)(parentNode, element);
+        return _drawEntityDataTask.bind(this)(parentNode, element, attrs);
     } else if (elementType === 'jmix-send-email') {
-        return this.bpmnRenderer.handlers['bpmn:SendTask'](parentNode, element);
+        return this.bpmnRenderer.handlers['bpmn:SendTask'](parentNode, element, attrs);
     } else {
-        return this.bpmnRenderer.handlers['bpmn:BusinessRuleTask'](parentNode, element);
+        return this.bpmnRenderer.handlers['bpmn:BusinessRuleTask'](parentNode, element, attrs);
     }
 };
 
-function _drawEntityDataTask(parentGfx, element) {
-    const rect = this.bpmnRenderer.handlers['bpmn:Task'](parentGfx, element);
+function _drawEntityDataTask(parentGfx, element, attrs = {}) {
+    const rect = this.bpmnRenderer.handlers['bpmn:Task'](parentGfx, element, attrs);
 
     const pathData = this.pathMap.getScaledPath('DATA_STORE', {
         abspos: {

@@ -159,12 +159,30 @@ public class BpmnViewer extends Component implements HasElement, ApplicationCont
     }
 
     /**
+     * Sets whether the user-defined element colors from the BPMN diagram are rendered (shown by default).
+     *
+     * @param visible whether the user-defined diagram colors should be rendered
+     */
+    public void setBpmnModelColorsVisible(boolean visible) {
+        getElement().callJsFunction("setBpmnModelColorsVisible", visible);
+    }
+
+    /**
      * Sets a list of elements that should be disabled in the viewer interactive mode.
      *
      * @param disabledElements disabled elements
      */
     public void setDisabledElements(@Nullable Collection<String> disabledElements) {
         callJsEncodedArgumentFunction("setDisabledElements", CollectionUtils.emptyIfNull(disabledElements));
+    }
+
+    /**
+     * Sets whether the elements the process token has not reached are shown as disabled.
+     *
+     * @param showAsDisabled whether the not passed elements are shown as disabled
+     */
+    public void setShowNotPassedAsDisabled(boolean showAsDisabled) {
+        getElement().callJsFunction("setShowNotPassedAsDisabled", showAsDisabled);
     }
 
     /**
@@ -233,6 +251,16 @@ public class BpmnViewer extends Component implements HasElement, ApplicationCont
     public void setMode(ViewerMode mode) {
         this.mode = mode;
         getElement().callJsFunction("setMode", mode != null ? mode.name() : null);
+    }
+
+    /**
+     * Switches the viewer to the {@link ViewerMode#INTERACTIVE} mode configured by the provided options.
+     *
+     * @param options interactive mode options; options that are not set are reset to their defaults
+     */
+    public void setInteractiveMode(@Nullable InteractiveModeOptions options) {
+        this.mode = ViewerMode.INTERACTIVE;
+        callJsEncodedArgumentFunction("setInteractiveMode", new SetInteractiveModeCmd(options));
     }
 
     /**
@@ -386,6 +414,79 @@ public class BpmnViewer extends Component implements HasElement, ApplicationCont
      */
     public void setActivityStatisticsVisible(boolean visible) {
         getElement().callJsFunction("setActivityStatisticsVisible", visible);
+    }
+
+    /**
+     * Shows the activity instance statistics overlays for the provided elements,
+     * replacing the previously shown ones.
+     *
+     * @param cmd a command containing statistics for the process elements
+     */
+    public void setActivityInstanceStatistics(SetActivityInstanceStatisticsCmd cmd) {
+        List<ActivityInstanceStatisticsOverlayData> items = cmd.getElements()
+                .stream()
+                .map(this::createActivityInstanceStatisticsOverlayData)
+                .toList();
+
+        ActivityInstanceStatisticsCmdData data = new ActivityInstanceStatisticsCmdData();
+        data.setVisible(cmd.isVisible());
+        data.setElements(items);
+
+        callJsEncodedArgumentFunction("setActivityInstanceStatistics", data);
+    }
+
+    /**
+     * Shows or hides the completed activity instance counts in the activity instance statistics overlays.
+     *
+     * @param visible whether the completed activity instance counts should be visible
+     */
+    public void setCompletedActivityCountVisible(boolean visible) {
+        getElement().callJsFunction("setCompletedActivityCountVisible", visible);
+    }
+
+    /**
+     * Converts the element statistics into the overlay data sent to the client.
+     *
+     * @param entry statistics for a single process element
+     * @return the overlay data for the process element
+     */
+    protected ActivityInstanceStatisticsOverlayData createActivityInstanceStatisticsOverlayData(
+            ActivityInstanceStatisticsData entry) {
+        ActivityInstanceStatisticsOverlayData data = new ActivityInstanceStatisticsOverlayData();
+        data.setElementId(entry.getElementId());
+
+        Integer activeCount = entry.getActiveCount();
+        if (activeCount != null && activeCount > 0) {
+            data.setActiveCount(formatNumber(activeCount));
+            data.setActiveCountTooltipMessage(messages.formatMessage("",
+                    "bpmnViewer.overlays.activeActivityCount.tooltipMessage", activeCount));
+        }
+        Integer completedCount = entry.getCompletedCount();
+        if (completedCount != null && completedCount > 0) {
+            data.setCompletedCount(formatNumber(completedCount));
+            data.setCompletedCountTooltipMessage(messages.formatMessage("",
+                    "bpmnViewer.overlays.completedActivityCount.tooltipMessage", completedCount));
+        }
+        if (entry.getIncidentCount() != null && entry.getIncidentCount() > 0) {
+            data.setIncidentCount(formatNumber(entry.getIncidentCount()));
+            data.setIncidentCountTooltipMessage(messages.formatMessage("",
+                    "bpmnViewer.overlays.incidentCount.tooltipMessage", entry.getIncidentCount()));
+        }
+        return data;
+    }
+
+    /**
+     * Highlights the sequence flows taken by the process tokens; flows that no longer match are unmarked.
+     * Both lists must contain all executed flow nodes: gateways and events as well as tasks.
+     *
+     * @param finishedActivities ids of the finished activity passes, ordered by start time
+     * @param runningActivities  ids of the currently running activities
+     */
+    public void showPassedFlows(List<String> finishedActivities, List<String> runningActivities) {
+        PassedFlowsCmdData data = new PassedFlowsCmdData();
+        data.setFinishedActivities(finishedActivities);
+        data.setRunningActivities(runningActivities);
+        callJsEncodedArgumentFunction("showPassedFlows", data);
     }
 
     /**

@@ -7,12 +7,12 @@ package io.flowset.uikit.fragment.bpmnviewer;
 
 import com.vaadin.flow.component.ClickEvent;
 import com.vaadin.flow.component.ComponentEventListener;
-import com.vaadin.flow.component.button.ButtonVariant;
 import com.vaadin.flow.component.dependency.CssImport;
 import com.vaadin.flow.component.html.Div;
 import com.vaadin.flow.shared.Registration;
 import com.vaadin.flow.theme.lumo.LumoUtility;
 import io.flowset.uikit.component.bpmnviewer.BpmnViewer;
+import io.flowset.uikit.component.bpmnviewer.InteractiveModeOptions;
 import io.flowset.uikit.component.bpmnviewer.ViewerMode;
 import io.flowset.uikit.component.bpmnviewer.command.*;
 import io.flowset.uikit.component.bpmnviewer.event.*;
@@ -54,10 +54,16 @@ public class BpmnViewerFragment extends Fragment<Div> {
     protected JmixButton showDocumentationBtn;
     @ViewComponent
     protected JmixButton showStatisticsBtn;
+    @ViewComponent
+    protected JmixButton showBpmnModelColorsBtn;
 
     protected boolean noBorders;
     protected boolean showDocumentation;
+    protected boolean bpmnModelColorsVisible = true;
+    protected boolean statisticsVisible = true;
+    protected boolean showNotPassedAsDisabled;
     protected ViewerMode mode;
+    protected InteractiveModeOptions interactiveModeOptions;
     protected BpmnViewer bpmnViewer;
 
     @Subscribe(target = Target.HOST_CONTROLLER)
@@ -91,10 +97,32 @@ public class BpmnViewerFragment extends Fragment<Div> {
      */
     public void showStatisticsButton(boolean visible) {
         showStatisticsBtn.setVisible(visible);
+    }
+
+    /**
+     * Sets the visibility of the button that toggles rendering of user-defined diagram colors.
+     * When the button is shown, the user-defined colors are hidden by default.
+     *
+     * @param visible whether the BPMN model colors toggle button should be visible
+     */
+    public void showBpmnModelColorsButton(boolean visible) {
+        showBpmnModelColorsBtn.setVisible(visible);
 
         if (visible) {
-            updateButtonActiveState(showStatisticsBtn, true);
-            showStatisticsBtn.setTitle(messages.getMessage("bpmnViewer.actions.hideActivityStatistics"));
+            applyBpmnModelColorsVisible(false);
+        }
+    }
+
+    /**
+     * Highlights the token path on the diagram by the executed activities.
+     *
+     * @param finishedActivities ids of the finished activity passes, ordered by start time, one entry per pass
+     * @param runningActivities  ids of the currently running activities, one entry per active token
+     * @see BpmnViewer#showPassedFlows(List, List)
+     */
+    public void showPassedFlows(List<String> finishedActivities, List<String> runningActivities) {
+        if (bpmnViewer != null) {
+            bpmnViewer.showPassedFlows(finishedActivities, runningActivities);
         }
     }
 
@@ -114,8 +142,24 @@ public class BpmnViewerFragment extends Fragment<Div> {
      */
     public void setMode(ViewerMode mode) {
         this.mode = mode;
+        this.interactiveModeOptions = null;
         if (bpmnViewer != null) {
             bpmnViewer.setMode(mode);
+        }
+    }
+
+    /**
+     * Switches the viewer to the {@link ViewerMode#INTERACTIVE} mode configured by the
+     * provided options.
+     *
+     * @param options interactive mode options
+     * @see BpmnViewer#setInteractiveMode(InteractiveModeOptions)
+     */
+    public void setInteractiveMode(@Nullable InteractiveModeOptions options) {
+        this.mode = ViewerMode.INTERACTIVE;
+        this.interactiveModeOptions = options;
+        if (bpmnViewer != null) {
+            bpmnViewer.setInteractiveMode(options);
         }
     }
 
@@ -129,6 +173,19 @@ public class BpmnViewerFragment extends Fragment<Div> {
     }
 
     /**
+     * Sets whether the elements the process token has not reached are shown as disabled.
+     *
+     * @param showAsDisabled whether the not passed elements are shown as disabled
+     * @see BpmnViewer#setShowNotPassedAsDisabled(boolean)
+     */
+    public void setShowNotPassedAsDisabled(boolean showAsDisabled) {
+        this.showNotPassedAsDisabled = showAsDisabled;
+        if (bpmnViewer != null) {
+            bpmnViewer.setShowNotPassedAsDisabled(showAsDisabled);
+        }
+    }
+
+    /**
      * Initializes the BPMN viewer with the specified XML.
      *
      * @param bpmnXml the BPMN XML to initialize the viewer with
@@ -136,7 +193,15 @@ public class BpmnViewerFragment extends Fragment<Div> {
     public void initViewer(String bpmnXml) {
         this.bpmnViewer = createBpmnViewer();
         this.bpmnViewer.setBpmnXml(bpmnXml);
-        this.bpmnViewer.setMode(mode);
+        if (mode == ViewerMode.INTERACTIVE && interactiveModeOptions != null) {
+            this.bpmnViewer.setInteractiveMode(interactiveModeOptions);
+        } else {
+            this.bpmnViewer.setMode(mode);
+        }
+        this.bpmnViewer.setBpmnModelColorsVisible(bpmnModelColorsVisible);
+        this.bpmnViewer.setActivityStatisticsVisible(statisticsVisible);
+        this.bpmnViewer.setCompletedActivityCountVisible(statisticsVisible);
+        this.bpmnViewer.setShowNotPassedAsDisabled(showNotPassedAsDisabled);
 
         viewerContainer.removeAll();
         viewerContainer.add(bpmnViewer);
@@ -194,6 +259,19 @@ public class BpmnViewerFragment extends Fragment<Div> {
     public void setActivityStatistics(SetActivityStatisticsCmd cmd) {
         if (this.bpmnViewer != null) {
             this.bpmnViewer.setActivityStatistics(cmd);
+        }
+    }
+
+    /**
+     * Shows the activity instance statistics overlays and updates the statistics toggle button state.
+     *
+     * @param cmd the command containing statistics for the process elements
+     * @see BpmnViewer#setActivityInstanceStatistics(SetActivityInstanceStatisticsCmd)
+     */
+    public void setActivityInstanceStatistics(SetActivityInstanceStatisticsCmd cmd) {
+        setStatisticsVisible(cmd.isVisible());
+        if (this.bpmnViewer != null) {
+            this.bpmnViewer.setActivityInstanceStatistics(cmd);
         }
     }
 
@@ -391,6 +469,29 @@ public class BpmnViewerFragment extends Fragment<Div> {
         }
     }
 
+    @Subscribe(id = "showBpmnModelColorsBtn", subject = "clickListener")
+    protected void onShowBpmnModelColorsBtnClick(final ClickEvent<JmixButton> event) {
+        applyBpmnModelColorsVisible(!bpmnModelColorsVisible);
+    }
+
+    /**
+     * Applies the visibility of user-defined diagram colors to the viewer and updates
+     * the toggle button state accordingly.
+     *
+     * @param visible whether the user-defined diagram colors should be rendered
+     */
+    protected void applyBpmnModelColorsVisible(boolean visible) {
+        bpmnModelColorsVisible = visible;
+        updateButtonActiveState(showBpmnModelColorsBtn, visible);
+        showBpmnModelColorsBtn.setTitle(messages.getMessage(visible
+                ? "bpmnViewer.actions.hideBpmnModelColors"
+                : "bpmnViewer.actions.showBpmnModelColors"));
+
+        if (bpmnViewer != null) {
+            bpmnViewer.setBpmnModelColorsVisible(visible);
+        }
+    }
+
     @Subscribe(id = "showDocumentationBtn", subject = "clickListener")
     public void onShowDocumentationBtnClick(final ClickEvent<JmixButton> event) {
         showDocumentation = !showDocumentation;
@@ -400,14 +501,25 @@ public class BpmnViewerFragment extends Fragment<Div> {
 
     @Subscribe(id = "showStatisticsBtn", subject = "clickListener")
     protected void onShowStatisticsBtnClick(final ClickEvent<JmixButton> event) {
-        if (isActiveButton(showStatisticsBtn)) {
-            updateButtonActiveState(showStatisticsBtn, false);
-            showStatisticsBtn.setTitle(messages.getMessage("bpmnViewer.actions.showActivityStatistics"));
-            bpmnViewer.setActivityStatisticsVisible(false);
-        } else {
-            updateButtonActiveState(showStatisticsBtn, true);
-            showStatisticsBtn.setTitle(messages.getMessage("bpmnViewer.actions.hideActivityStatistics"));
-            bpmnViewer.setActivityStatisticsVisible(true);
+        setStatisticsVisible(!isActiveButton(showStatisticsBtn));
+    }
+
+    /**
+     * Shows or hides the activity statistics on the diagram and updates the statistics
+     * toggle button state accordingly.
+     *
+     * @param visible whether the statistics should be visible
+     */
+    public void setStatisticsVisible(boolean visible) {
+        statisticsVisible = visible;
+        updateButtonActiveState(showStatisticsBtn, visible);
+        showStatisticsBtn.setTitle(messages.getMessage(visible
+                ? "bpmnViewer.actions.hideActivityStatistics"
+                : "bpmnViewer.actions.showActivityStatistics"));
+
+        if (bpmnViewer != null) {
+            bpmnViewer.setActivityStatisticsVisible(visible);
+            bpmnViewer.setCompletedActivityCountVisible(visible);
         }
     }
 

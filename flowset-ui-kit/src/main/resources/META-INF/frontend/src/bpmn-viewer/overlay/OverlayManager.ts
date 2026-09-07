@@ -6,6 +6,7 @@
 import Overlays, {OverlayAttrs} from "diagram-js/lib/features/overlays/Overlays";
 import {createIncidentOverlay} from "./createIncidentOverlay";
 import {
+    ActivityInstanceStatisticsOverlayData,
     CalledInstancesOverlayParams,
     CalledProcessOverlaysParams,
     DecisionInstanceLinkOverlayParams,
@@ -31,10 +32,11 @@ import {getBinding, getCalledElement, getVersion, getVersionTag} from "../utils/
 import {ElementLike} from "diagram-js/lib/model/Types";
 import {findElementDocumentation} from "../utils/documentationUtils";
 import {createActivityStatisticsOverlay} from "./createActivityStatisticsOverlay";
+import {createActivityInstanceStatisticsOverlay} from "./createActivityInstanceStatisticsOverlay";
 import {getElementTransactionBoundary} from "../utils/transactionBoundaryUtils";
 import {forEach} from 'min-dash';
 import {createTransactionBoundaryOverlay} from "./createTransactionBoundaryOverlay";
-import {BeforeElementTransactionType, ElementTransactionBoundary} from "../types";
+import {BeforeElementTransactionType, ElementMarkerType, ElementTransactionBoundary} from "../types";
 import {Point, Rect} from "diagram-js/lib/util/Types";
 import {createAnimationOverlay} from "./createAnimationOverlay";
 import {
@@ -289,6 +291,24 @@ export class OverlayManager {
     }
 
     /**
+     * Shows the provided activity instance statistics overlays.
+     *
+     * @param items overlay data for the elements that have statistics
+     */
+    public setActivityInstanceStatistics(items: ActivityInstanceStatisticsOverlayData[]) {
+        this.overlays.remove({type: OverlayType.ACTIVITY_INSTANCE_STATISTICS});
+
+        items.forEach(item => {
+            if (!this.elementRegistry.get(item.elementId)) {
+                console.error('Element not found:', item.elementId);
+                return;
+            }
+            this.overlays.add(item.elementId, OverlayType.ACTIVITY_INSTANCE_STATISTICS,
+                createActivityInstanceStatisticsOverlay(item));
+        });
+    }
+
+    /**
      * Adds an overlay with variable changes for the specified element.
      * @param data overlay data
      */
@@ -450,13 +470,13 @@ export class OverlayManager {
 
     private shouldRenderSendMessageOverlay(element: ElementLike, data: SendMessageOverlaysData): boolean {
         if (data.useActiveEvents) {
-            const isRunningActivity = this.canvas.hasMarker(element.id, 'running-activity');
+            const isRunningActivity = this.canvas.hasMarker(element.id, ElementMarkerType.RUNNING_ACTIVITY);
             if (isRunningActivity) {
                 return true;
 
             }
             if (element.host) {
-                return this.canvas.hasMarker(element.host, 'running-activity');
+                return this.canvas.hasMarker(element.host, ElementMarkerType.RUNNING_ACTIVITY);
             }
 
             return false;

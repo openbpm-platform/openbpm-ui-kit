@@ -11,6 +11,7 @@ import MoveCanvasModule from 'diagram-js/lib/navigation/movecanvas';
 import ZoomScrollModule from 'diagram-js/lib/navigation/zoomscroll';
 import BpmRenderer from "./features/bpm-renderer";
 import BpmDrawing from "./features/bpm-drawing";
+import BpmnModelColorsModule from "./features/bpmn-model-colors";
 
 /**
  * Custom BPMN viewer with included custom modules.
@@ -26,6 +27,7 @@ inherits(BpmnViewer, Viewer);
 BpmnViewer.prototype._customModules = [
     BpmDrawing,
     BpmRenderer,
+    BpmnModelColorsModule,
     KeyboardMoveModule,
     MoveCanvasModule,
     ZoomScrollModule
