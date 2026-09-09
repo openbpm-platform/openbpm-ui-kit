@@ -12,6 +12,7 @@ export enum OverlayType {
     CALLED_PROCESS = 'called-process',
     CALLED_PROCESS_INSTANCE = 'called-process-instance',
     ACTIVITY_STATISTICS = 'activity-statistics',
+    ACTIVITY_INSTANCE_STATISTICS = 'activity-instance-statistics',
     INCIDENT_COUNT = 'incident-count',
     SEND_MESSAGE = 'send-message',
     TRANSACTION_BOUNDARY = 'transaction-boundary',
@@ -59,6 +60,21 @@ export interface NewActivityStatisticsOverlayData {
     instanceCount: string;
     incidentCountTooltipMessage?: string;
     instanceCountTooltipMessage: string;
+}
+
+export interface ActivityInstanceStatisticsOverlayData {
+    elementId: string;
+    activeCount?: string;
+    completedCount?: string;
+    incidentCount?: string;
+    activeCountTooltipMessage?: string;
+    completedCountTooltipMessage?: string;
+    incidentCountTooltipMessage?: string;
+}
+
+export interface ActivityInstanceStatisticsCmdData {
+    visible?: boolean;
+    elements?: ActivityInstanceStatisticsOverlayData[];
 }
 
 

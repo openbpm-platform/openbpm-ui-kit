@@ -14,6 +14,8 @@ import {
     AddMarkerCmd,
     AutoZoomDirection,
     BpmProcessDefinition,
+    PassedFlowsCmd,
+    SetInteractiveModeCmd,
     RemoveMarkerCmd,
     ScrollToElementCmd,
     SetElementColorCmd,
@@ -30,6 +32,7 @@ import {
     XmlImportCompleteEvent
 } from "./events";
 import BpmDrawing from "./bpm/js/features/bpm-drawing/BpmDrawing";
+import BpmnModelColors from "./bpm/js/features/bpmn-model-colors/BpmnModelColors";
 import BpmnViewer from "./bpm/js/BpmnViewer";
 import {ImportParseCompleteEvent} from "bpmn-js/lib/BaseViewer";
 import ElementRegistry from 'diagram-js/lib/core/ElementRegistry';
@@ -39,6 +42,7 @@ import {bpmnViewerStyles} from "./styles/bpmnViewerStyles";
 import {OverlayManager} from "./overlay/OverlayManager";
 import {ElementLike} from "diagram-js/lib/model/Types";
 import {
+    ActivityInstanceStatisticsCmdData,
     CalledInstancesOverlayData,
     CalledProcessOverlaysData,
     DecisionInstanceLinkOverlayData,
@@ -55,6 +59,7 @@ import {BpmnElementDataExtractor} from "./element/BpmnElementDataExtractor";
 import {createContextMenuEventData} from "./contextmenu/createContextMenuEventData";
 import {isMultiInstanceSupported} from "./utils/multiInstanceTaskUtils";
 import {getActivityData} from "./utils/elementMetadataUtils";
+import {MarkerManager} from "./marker/MarkerManager";
 
 @customElement("flowset-bpmn-viewer")
 class FlowsetBpmnViewer extends LitElement {
@@ -77,12 +82,20 @@ class FlowsetBpmnViewer extends LitElement {
     private overlayManager: OverlayManager;
     private elementDataExtractor: BpmnElementDataExtractor;
     private viewerHolder: HTMLDivElement | undefined;
+    private markerManager: MarkerManager;
 
     private processDefinitionsJson: string = "[]";
 
     private mode: string;
     private activeElements?: string[];
     private disabledElements?: string[];
+    private showNotPassedAsDisabled: boolean = false;
+    /** CSS class previewing the pending marker on hovered clickable elements */
+    private hoverMarkerClass?: string;
+    /** keeps the "not passed as disabled" presentation active in the current interactive session */
+    private notPassedAsDisabled: boolean = false;
+
+    private readonly bpmnModelColors: BpmnModelColors;
 
     static get styles() {
         return bpmnViewerStyles;
@@ -97,6 +110,8 @@ class FlowsetBpmnViewer extends LitElement {
         this.eventBus = this.viewer.get<EventBus>("eventBus");
         this.overlayManager = new OverlayManager(this.viewer);
         this.elementDataExtractor = new BpmnElementDataExtractor();
+        this.markerManager = new MarkerManager(this.viewer);
+        this.bpmnModelColors = this.viewer.get<BpmnModelColors>("bpmnModelColors");
 
         this.viewer.on("import.parse.complete", (e: ImportParseCompleteEvent) => {
             const processDefinitions: BpmProcessDefinition[] = findProcessDefinitions(e);
@@ -294,12 +309,27 @@ class FlowsetBpmnViewer extends LitElement {
 
     public addMarker(cmdJson: string) {
         const cmd: AddMarkerCmd = JSON.parse(cmdJson);
-        this.awaitRun(() => this.canvas.addMarker(cmd.elementId, cmd.marker));
+        this.awaitRun(() => {
+            this.markerManager.addMarker(cmd.elementId, cmd.marker);
+        });
     }
 
     public removeMarker(cmdJson: string) {
         const cmd: RemoveMarkerCmd = JSON.parse(cmdJson);
-        this.awaitRun(() => this.canvas.removeMarker(cmd.elementId, cmd.marker));
+        this.awaitRun(() => {
+            this.markerManager.removeMarker(cmd.elementId, cmd.marker);
+        });
+    }
+
+    public showPassedFlows(passedFlowsCmdJson: string) {
+        const cmd: PassedFlowsCmd = JSON.parse(passedFlowsCmdJson) || {};
+        this.awaitRun(() => {
+           this.markerManager.highlightPassedFlows(cmd.finishedActivities ?? [], cmd.runningActivities ?? []);
+        });
+    }
+
+    public setBpmnModelColorsVisible(visible: boolean) {
+        this.awaitRun(() => this.bpmnModelColors.setVisible(visible));
     }
 
     public resetZoom() {
@@ -323,12 +353,43 @@ class FlowsetBpmnViewer extends LitElement {
 
     public setMode(mode?: string) {
         this.mode = mode;
+        this.hoverMarkerClass = undefined;
+        this.notPassedAsDisabled = false;
         if (mode === ViewerMode.Interactive) {
             this.removeElementInteractionListeners();
             this.addElementInteractionListeners((element) => this.isActiveElement(element));
         } else if (!mode || mode === ViewerMode.ReadOnly) {
             this.removeElementInteractionListeners();
         }
+        this.awaitRun(() => {
+            this.updateNotPassedPresentation();
+        });
+    }
+
+    // options not present in the payload are reset to their defaults
+    public setInteractiveMode(optionsJson?: string) {
+        const options: SetInteractiveModeCmd = optionsJson ? JSON.parse(optionsJson) : {};
+        this.mode = ViewerMode.Interactive;
+        this.activeElements = options.activeElements?.length ? options.activeElements : undefined;
+        this.disabledElements = options.disabledElements?.length ? options.disabledElements : undefined;
+        this.hoverMarkerClass = options.activeElementMarker ? `${options.activeElementMarker}-hover` : undefined;
+        this.notPassedAsDisabled = !!options.notPassedAsDisabled;
+        this.removeElementInteractionListeners();
+        this.addElementInteractionListeners((element) => this.isActiveElement(element));
+        this.awaitRun(() => {
+            this.updateNotPassedPresentation();
+        });
+    }
+
+    public setShowNotPassedAsDisabled(showAsDisabled: boolean) {
+        this.showNotPassedAsDisabled = showAsDisabled;
+        this.awaitRun(() => this.updateNotPassedPresentation());
+    }
+
+    private updateNotPassedPresentation() {
+        const active = this.showNotPassedAsDisabled
+            && (this.mode !== ViewerMode.Interactive || this.notPassedAsDisabled);
+        this.canvas.getContainer().classList.toggle("bpmn-not-passed-as-disabled", active);
     }
 
     public setActiveElements(activeElements?: string) {
@@ -354,6 +415,20 @@ class FlowsetBpmnViewer extends LitElement {
     public removeActivityStatistics(activityId: string) {
         this.awaitRun(() => {
             this.overlayManager.removeOverlay(activityId, OverlayType.ACTIVITY_STATISTICS);
+        });
+    }
+
+    public setActivityInstanceStatistics(cmdJson: string) {
+        const cmd: ActivityInstanceStatisticsCmdData = JSON.parse(cmdJson) || {};
+        this.awaitRun(() => {
+            this.overlayManager.setActivityInstanceStatistics(cmd.elements || []);
+            this.canvas.getContainer().classList.toggle("bpmn-hide-completed-count", !cmd.visible);
+        });
+    }
+
+    public setCompletedActivityCountVisible(visible: boolean) {
+        this.awaitRun(() => {
+            this.canvas.getContainer().classList.toggle("bpmn-hide-completed-count", !visible);
         });
     }
 
@@ -432,6 +507,9 @@ class FlowsetBpmnViewer extends LitElement {
             const elementActive = isElementActive(event.element);
             if (elementActive) {
                 this.canvas.addMarker(event.element.id, 'activity-hover');
+                if (this.hoverMarkerClass) {
+                    this.canvas.addMarker(event.element.id, this.hoverMarkerClass);
+                }
             }
         });
 
@@ -439,6 +517,9 @@ class FlowsetBpmnViewer extends LitElement {
             const hasMarker = this.canvas.hasMarker(event.element.id, 'activity-hover');
             if (hasMarker) { // an active element can become disabled after click, need to remove marker anyway
                 this.canvas.removeMarker(event.element.id, 'activity-hover');
+            }
+            if (this.hoverMarkerClass && this.canvas.hasMarker(event.element.id, this.hoverMarkerClass)) {
+                this.canvas.removeMarker(event.element.id, this.hoverMarkerClass);
             }
         });
 

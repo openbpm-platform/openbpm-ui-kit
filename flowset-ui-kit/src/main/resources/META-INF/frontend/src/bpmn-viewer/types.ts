@@ -38,14 +38,46 @@ export interface SetElementColorCmd {
     stroke: string;
 }
 
+/**
+ * Marker ids applied as CSS classes to the diagram elements;
+ * mirrors the server-side ElementMarkerType enum.
+ */
+export enum ElementMarkerType {
+    RUNNING_ACTIVITY = "running-activity",
+    FINISHED_ACTIVITY = "finished-activity",
+    PASSED_FLOW = "passed-flow",
+    MODIFICATION_SOURCE_ACTIVITY = "modification-source-activity",
+    MODIFICATION_TARGET_ACTIVITY = "modification-target-activity",
+    PRIMARY_COLOR_ACTIVITY = "primary-color-activity",
+}
+
+/**
+ * Data to highlight the passed sequence flows; mirrors the server-side PassedFlowsCmdData.
+ */
+export interface PassedFlowsCmd {
+    /** ids of the finished activity passes, ordered by start time, one entry per pass */
+    finishedActivities?: string[];
+    /** ids of the currently running activities, one entry per active token */
+    runningActivities?: string[];
+}
+
 export interface AddMarkerCmd {
     elementId: string;
-    marker: string;
+    marker: ElementMarkerType;
 }
 
 export interface RemoveMarkerCmd {
     elementId: string;
-    marker: string;
+    marker: ElementMarkerType;
+}
+
+export interface SetInteractiveModeCmd {
+    activeElements?: string[];
+    disabledElements?: string[];
+    /** marker whose coloring is previewed on hover, as the "<markerId>-hover" class */
+    activeElementMarker?: ElementMarkerType;
+    /** keep the "not passed as disabled" presentation active during this interactive session */
+    notPassedAsDisabled?: boolean;
 }
 
 export enum AutoZoomDirection {

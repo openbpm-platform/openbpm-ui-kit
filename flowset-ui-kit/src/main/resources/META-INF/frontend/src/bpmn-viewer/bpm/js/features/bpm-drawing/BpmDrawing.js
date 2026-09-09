@@ -6,12 +6,13 @@
 import {getDi} from 'bpmn-js/lib/draw/BpmnRenderUtil';
 
 
-export default function BpmDrawing(elementRegistry, graphicsFactory) {
+export default function BpmDrawing(elementRegistry, graphicsFactory, bpmnModelColors) {
     this._elementRegistry = elementRegistry;
     this._graphicsFactory = graphicsFactory;
+    this._bpmnModelColors = bpmnModelColors;
 }
 
-BpmDrawing.$inject = ['elementRegistry', 'graphicsFactory'];
+BpmDrawing.$inject = ['elementRegistry', 'graphicsFactory', 'bpmnModelColors'];
 
 /**
  * Custom function for coloring BPMN element on diagram.
@@ -27,6 +28,10 @@ BpmDrawing.prototype.setElementColor = function (context) {
 
     getDi(element).set('stroke', context.stroke);
     getDi(element).set('fill', context.fill);
+
+    // colors set through the API are highlighting, not diagram colors -
+    // keep them visible while user-defined colors are hidden
+    this._bpmnModelColors.markProgrammaticallyColored(element);
 
     const gfx = elementRegistry.getGraphics(element);
     const type = element.waypoints ? 'connection' : 'shape';

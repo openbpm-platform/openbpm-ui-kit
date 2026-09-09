@@ -23,21 +23,32 @@ import org.jspecify.annotations.Nullable;
 public enum ElementMarkerType implements EnumClass<String> {
 
     /**
-     * Marks an activity that is currently running: the element background is filled with the
-     * {@code --bpmn-running-activity-color} color.
-     * <p>
-     * The marker is also taken into account when the "send message" overlays are shown for the
-     * active events of the diagram.
+     * Marks an activity that is currently running. The marker is also taken into
+     * account when the "send message" overlays are shown for the active events.
      */
     RUNNING_ACTIVITY("running-activity"),
 
     /**
-     * Marks an activity selected as a source of the process instance modification.
+     * Marks an activity the process token has already passed.
+     */
+    FINISHED_ACTIVITY("finished-activity"),
+
+    /**
+     * Marks a sequence flow as a part of the taken token path.
+     * The viewer also applies this marker automatically to the flows connecting the passed activities.
+     */
+    PASSED_FLOW("passed-flow"),
+
+    /**
+     * Marks an activity selected as a source of the process instance modification (its tokens
+     * get cancelled): the element gets an orange outline ring
+     * ({@code --bpmn-modification-source-activity-stroke-color}).
      */
     MODIFICATION_SOURCE_ACTIVITY("modification-source-activity"),
 
     /**
-     * Marks an activity selected as a target of the process instance modification.
+     * Marks an activity selected as a target of the process instance modification (the new
+     * start point).
      */
     MODIFICATION_TARGET_ACTIVITY("modification-target-activity"),
 

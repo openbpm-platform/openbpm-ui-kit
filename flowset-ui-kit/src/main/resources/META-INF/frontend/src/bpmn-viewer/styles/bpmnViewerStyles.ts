@@ -10,8 +10,42 @@ export const bpmnViewerStyles = css`
         outline: none;
     }
 
+    .finished-activity:not(.djs-connection) .djs-visual {
+        filter: var(--bpmn-finished-activity-filter);
+    }
+
+    .finished-activity:not(.djs-connection) .djs-visual > :nth-child(1) {
+        stroke: var(--bpmn-finished-activity-stroke-color) !important;
+        stroke-width: var(--bpmn-finished-activity-stroke-width) !important;
+        filter: drop-shadow(0 0 var(--bpmn-finished-activity-glow-size) var(--bpmn-finished-activity-glow-color));
+    }
+    
+    .passed-flow.djs-connection .djs-visual > path {
+        stroke: var(--bpmn-passed-flow-stroke-color) !important;
+        stroke-width: var(--bpmn-finished-activity-stroke-width) !important;
+    }
+
+    .passed-flow.djs-connection .djs-visual > defs > marker > path {
+        stroke: var(--bpmn-passed-flow-stroke-color) !important;
+        fill: var(--bpmn-passed-flow-stroke-color) !important;
+    }
+
+    .djs-element > .djs-visual {
+        transition: filter 0.25s;
+    }
+
+    /* When the canvas is in the "not passed as disabled" state, every element without
+       a token-history marker (and every label of such an element) is rendered the way
+       disabled UI elements are */
+    .bpmn-not-passed-as-disabled .djs-element:not(.running-activity):not(.finished-activity):not(.passed-flow):not(.marked-element-label) > .djs-visual {
+        filter: var(--bpmn-disabled-element-filter);
+    }
+
+
     .running-activity:not(.djs-connection) .djs-visual > :nth-child(1) {
-        fill: var(--bpmn-running-activity-color) !important;
+        stroke: var(--bpmn-running-activity-stroke-color) !important;
+        stroke-width: var(--bpmn-finished-activity-stroke-width) !important;
+        filter: drop-shadow(0 0 var(--bpmn-running-activity-glow-size) var(--bpmn-running-activity-glow-color));
     }
 
     .modification-source-activity:not(.djs-connection) .djs-visual {
@@ -31,6 +65,14 @@ export const bpmnViewerStyles = css`
         outline: var(--bpmn-select-overlay-width) solid var(--bpmn-activity-hover-stroke-color) !important;
         border-radius: var(--bpmn-select-overlay-border-radius);
         outline-offset: var(--bpmn-select-overlay-offset);
+    }
+
+    .modification-source-activity-hover.activity-hover:not(.djs-connection) .djs-visual {
+        outline-color: var(--bpmn-modification-source-hover-stroke-color) !important;
+    }
+
+    .modification-target-activity-hover.activity-hover:not(.djs-connection) .djs-visual {
+        outline-color: var(--bpmn-modification-target-hover-stroke-color) !important;
     }
 
     .primary-color-activity:not(.djs-connection) .djs-visual {
@@ -137,6 +179,66 @@ export const bpmnViewerStyles = css`
         height: var(--default-bpmn-element-overlay-size);
         display: flex;
         justify-content: center;
+    }
+
+    .activity-instance-statistics-overlay {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 1px;
+    }
+
+    .activity-instance-statistics-overlay .statistics-line {
+        display: flex;
+        flex-direction: row;
+        gap: 2px;
+    }
+
+    .bpmn-hide-completed-count .statistics-line-completed {
+        display: none;
+    }
+
+    .active-tokens-overlay,
+    .completed-activity-overlay {
+        background-color: var(--bpmn-active-tokens-overlay-bg-color);
+        color: var(--bpmn-active-tokens-overlay-text-color);
+        border: var(--bpmn-active-tokens-overlay-border);
+        border-radius: var(--lumo-border-radius-m);
+        line-height: var(--default-bpmn-element-overlay-size);
+        padding: 0 0.15em;
+        text-align: center;
+        font-size: var(--bpmn-activity-instance-statistics-overlay-font-size);
+        font-weight: bold;
+        min-width: var(--default-bpmn-element-overlay-size);
+        height: var(--default-bpmn-element-overlay-size);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.15em;
+    }
+
+    .completed-activity-overlay {
+        background-color: var(--bpmn-completed-activity-overlay-bg-color);
+        color: var(--bpmn-completed-activity-overlay-text-color);
+        border: var(--bpmn-completed-activity-overlay-border);
+    }
+    
+    .activity-instance-statistics-overlay .incident-overlay {
+        padding: 0 0.15em;
+        align-items: center;
+        gap: 0.15em;
+        font-size: var(--bpmn-activity-instance-statistics-overlay-font-size);
+        border-width: 1.5px;
+    }
+
+    .badge-icon {
+        display: flex;
+    }
+
+    .badge-icon svg {
+        width: 0.8em;
+        height: 0.8em;
+        display: block;
     }
 
     .navigation-overlay {
